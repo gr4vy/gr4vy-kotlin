@@ -37,42 +37,17 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Verify OSSRH credentials
-        env:
-          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-        run: |
-          set -euo pipefail
-          echo "Checking s01…"
-          code_s01=$(curl -s -o /dev/null -w "%{http_code}" \
-            -u "${OSSRH_USERNAME}:${OSSRH_PASSWORD}" \
-            https://s01.oss.sonatype.org/service/local/staging/profiles || true)
-          echo "s01 returned HTTP ${code_s01}"
-      
-          if [ "${code_s01}" != "200" ]; then
-            echo "Checking oss…"
-            code_oss=$(curl -s -o /dev/null -w "%{http_code}" \
-              -u "${OSSRH_USERNAME}:${OSSRH_PASSWORD}" \
-              https://oss.sonatype.org/service/local/staging/profiles || true)
-            echo "oss returned HTTP ${code_oss}"
-            if [ "${code_oss}" = "200" ]; then
-              echo "::error ::Your profile is on oss.sonatype.org but build points to s01. Switch the host."
-              exit 1
-            fi
-            echo "::error ::OSSRH credentials are not valid for the legacy staging API. Use a **User Token** (username+password) from the Sonatype UI."
-            exit 1
-          fi
-
       - name: Build Release AAR
         run: ./gradlew assembleRelease
 
-      - name: Publish to Maven Central
-        run: ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository --info
+      - name: Publish to Maven Central (Central Portal)
+        run: ./gradlew publishAndReleaseToMavenCentral --info
         env:
-          ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.OSSRH_USERNAME }}
-          ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.OSSRH_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.JAVA_GPG_SECRET_KEY }}
-          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.JAVA_GPG_PASSPHRASE }}
+          # These become Gradle project properties:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.OSSRH_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.OSSRH_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.JAVA_GPG_SECRET_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.JAVA_GPG_PASSPHRASE }}
           
       - name: Create Draft Release with Artifacts
         uses: ncipollo/release-action@v1

@@ -4,12 +4,11 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
     id("maven-publish")
     id("signing")
-    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
+    id("com.vanniktech.maven.publish") version "0.34.0" // Central-ready
 }
 
-// Import required for publishing task types  
-import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
-import org.gradle.api.publish.tasks.GenerateModuleMetadata
+import com.vanniktech.maven.publish.SonatypeHost
+import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
 
 // Function to extract version from Version.kt
 fun getVersionFromKotlin(): String {
@@ -33,6 +32,9 @@ fun getVersionCode(version: String): Int {
 }
 
 val sdkVersion = getVersionFromKotlin()
+
+group = "com.gr4vy"
+version = sdkVersion
 
 android {
     namespace = "com.gr4vy.sdk"
@@ -205,108 +207,55 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 }
 
-// Register custom tasks for Maven Central publishing 
-val mavenSourcesJar by tasks.registering(Jar::class) {
-    archiveClassifier.set("sources")
-    from(android.sourceSets.getByName("main").java.srcDirs)
-}
+// Maven Central publishing configuration using Vanniktech plugin
+mavenPublishing {
+    // Publish via Central Portal; automatic release after upload:
+    publishToMavenCentral(automaticRelease = true)
 
-val mavenJavadocJar by tasks.registering(Jar::class) {
-    archiveClassifier.set("javadoc")
-    // Create empty javadoc jar to satisfy Maven Central requirements
-    // Full javadoc generation can be complex for Android libraries
-    val javadocDir = layout.buildDirectory.dir("tmp/javadoc")
-    from(javadocDir)
-    
-    doFirst {
-        javadocDir.get().asFile.mkdirs()
-        javadocDir.get().file("README.txt").asFile.writeText(
-            "This library uses Kotlin with inline documentation.\n" +
-            "Please refer to the source code and GitHub repository for documentation."
+    // Sign everything (the plugin will read signingInMemoryKey* properties from CI):
+    signAllPublications()
+
+    // Publish the Android "release" variant with sources & javadoc jars:
+    configure(
+        AndroidSingleVariantLibrary(
+            variant = "release",
+            sourcesJar = true,
+            publishJavadocJar = true
         )
-    }
-}
+    )
 
-publishing {
-    publications {
-        register<MavenPublication>("release") {
-            groupId = "com.gr4vy"
-            artifactId = "gr4vy-kotlin"
-            version = sdkVersion
+    // Coordinates & POM metadata
+    coordinates("com.gr4vy", "gr4vy-kotlin", version.toString())
 
-            afterEvaluate {
-                from(components["release"])
+    pom {
+        name.set("Gr4vy Kotlin SDK")
+        description.set("Official Kotlin SDK for Gr4vy payment processing")
+        inceptionYear.set("2024")
+        url.set("https://github.com/gr4vy/gr4vy-kotlin")
+
+        licenses {
+            license {
+                name.set("MIT")
+                url.set("https://opensource.org/licenses/MIT")
+                distribution.set("repo")
             }
-            
-            // Required artifacts for Maven Central
-            artifact(mavenSourcesJar)
-            artifact(mavenJavadocJar)
-
-            pom {
-                name.set("Gr4vy Kotlin SDK")
-                description.set("Official Kotlin SDK for Gr4vy payment processing")
-                url.set("https://github.com/gr4vy/gr4vy-kotlin")
-                
-                licenses {
-                    license {
-                        name.set("MIT")
-                        url.set("https://opensource.org/licenses/MIT")
-                    }
-                }
-                
-                developers {
-                    developer {
-                        id.set("gr4vy")
-                        name.set("Gr4vy")
-                        email.set("support@gr4vy.com")
-                    }
-                }
-                
-                scm {
-                    connection.set("scm:git:git://github.com/gr4vy/gr4vy-kotlin.git")
-                    developerConnection.set("scm:git:ssh://github.com:gr4vy/gr4vy-kotlin.git")
-                    url.set("https://github.com/gr4vy/gr4vy-kotlin/tree/main")
-                }
+        }
+        developers {
+            developer {
+                id.set("gr4vy")
+                name.set("Gr4vy")
+                email.set("mobile@gr4vy.com")
             }
+        }
+        scm {
+            url.set("https://github.com/gr4vy/gr4vy-kotlin")
+            connection.set("scm:git:git://github.com/gr4vy/gr4vy-kotlin.git")
+            developerConnection.set("scm:git:ssh://github.com:gr4vy/gr4vy-kotlin.git")
         }
     }
 }
 
-// Ensure publishing tasks depend on artifact generation tasks
-tasks.withType<PublishToMavenRepository>().configureEach {
-    dependsOn(mavenSourcesJar)
-    dependsOn(mavenJavadocJar)
-}
 
-tasks.withType<GenerateModuleMetadata>().configureEach {
-    dependsOn(mavenSourcesJar)
-    dependsOn(mavenJavadocJar)
-}
-
-// Signing configuration for Maven Central
-signing {
-    val signingKey: String? by project
-    val signingPassword: String? by project
-    
-    // Only sign if keys are available (for CI/CD)
-    if (signingKey != null && signingPassword != null) {
-        useInMemoryPgpKeys(signingKey, signingPassword)
-        sign(publishing.publications["release"])
-    }
-}
-
-// Nexus publishing configuration
-nexusPublishing {
-    repositories {
-        sonatype {
-            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
-            snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
-            username.set(project.findProperty("ossrhUsername") as String? ?: System.getenv("OSSRH_USERNAME"))
-            password.set(project.findProperty("ossrhPassword") as String? ?: System.getenv("OSSRH_PASSWORD"))
-            packageGroup.set("com.gr4vy") 
-        }
-    }
-}
 
 // Print the SDK version during build for verification
 println("Gr4vy Kotlin SDK version: $sdkVersion")
