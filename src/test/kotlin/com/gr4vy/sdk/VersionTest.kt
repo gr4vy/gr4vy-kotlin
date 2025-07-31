@@ -26,6 +26,6 @@ class VersionTest {
 
     @Test
     fun `test version is correct`() {
-        assertEquals("1.0.0-beta.1", Version.current)
+        assertEquals("1.0.0-beta.2", Version.current)
     }
 } 
