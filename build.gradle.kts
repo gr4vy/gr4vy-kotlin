@@ -7,6 +7,10 @@ plugins {
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
 }
 
+// Import required for publishing task types  
+import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
+import org.gradle.api.publish.tasks.GenerateModuleMetadata
+
 // Function to extract version from Version.kt
 fun getVersionFromKotlin(): String {
     val versionFile = file("src/main/kotlin/com/gr4vy/sdk/Version.kt")
@@ -33,6 +37,13 @@ val sdkVersion = getVersionFromKotlin()
 android {
     namespace = "com.gr4vy.sdk"
     compileSdk = 36
+    
+    // Disable automatic sources jar generation to avoid conflicts
+    publishing {
+        singleVariant("release") {
+            // Don't publish sources automatically - we'll add them manually
+        }
+    }
 
     defaultConfig {
         minSdk = 26
@@ -194,13 +205,13 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 }
 
-// Register tasks for Maven Central publishing artifacts
-tasks.register("androidSourcesJar", Jar::class) {
+// Register custom tasks for Maven Central publishing 
+val mavenSourcesJar by tasks.registering(Jar::class) {
     archiveClassifier.set("sources")
     from(android.sourceSets.getByName("main").java.srcDirs)
 }
 
-tasks.register("androidJavadocJar", Jar::class) {
+val mavenJavadocJar by tasks.registering(Jar::class) {
     archiveClassifier.set("javadoc")
     // Create empty javadoc jar to satisfy Maven Central requirements
     // Full javadoc generation can be complex for Android libraries
@@ -228,8 +239,8 @@ publishing {
             }
             
             // Required artifacts for Maven Central
-            artifact(tasks.named("androidSourcesJar"))
-            artifact(tasks.named("androidJavadocJar"))
+            artifact(mavenSourcesJar)
+            artifact(mavenJavadocJar)
 
             pom {
                 name.set("Gr4vy Kotlin SDK")
@@ -261,12 +272,27 @@ publishing {
     }
 }
 
+// Ensure publishing tasks depend on artifact generation tasks
+tasks.withType<PublishToMavenRepository>().configureEach {
+    dependsOn(mavenSourcesJar)
+    dependsOn(mavenJavadocJar)
+}
+
+tasks.withType<GenerateModuleMetadata>().configureEach {
+    dependsOn(mavenSourcesJar)
+    dependsOn(mavenJavadocJar)
+}
+
 // Signing configuration for Maven Central
 signing {
     val signingKey: String? by project
     val signingPassword: String? by project
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign(publishing.publications["release"])
+    
+    // Only sign if keys are available (for CI/CD)
+    if (signingKey != null && signingPassword != null) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign(publishing.publications["release"])
+    }
 }
 
 // Nexus publishing configuration
