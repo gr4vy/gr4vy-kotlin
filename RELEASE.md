@@ -73,7 +73,8 @@ Once you push the tag, GitHub Actions automatically:
 3. **Validates Gradle wrapper**
 4. **Runs tests** (`./gradlew test`)
 5. **Builds release AAR** (`./gradlew assembleRelease`)
-6. **Creates a draft GitHub release** with the built AAR attached
+6. **Publishes to Maven Central** (`./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository`)
+7. **Creates a draft GitHub release** with the built AAR attached
 
 ### 5. Finalize the Release
 
@@ -96,6 +97,7 @@ Once you push the tag, GitHub Actions automatically:
 
 ### Where Are Releases Published?
 - **GitHub Releases**: Draft release with AAR attached
+- **Maven Central**: Automatically published to Maven Central via Sonatype
 
 ## Version Naming Convention
 

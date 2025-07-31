@@ -3,6 +3,8 @@ plugins {
     id("org.jetbrains.kotlin.android") version "2.0.21"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
     id("maven-publish")
+    id("signing")
+    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
 }
 
 // Function to extract version from Version.kt
@@ -202,6 +204,33 @@ publishing {
             afterEvaluate {
                 from(components["release"])
             }
+            
+            // Required artifacts for Maven Central
+            artifact(tasks.register("androidSourcesJar", Jar::class) {
+                archiveClassifier.set("sources")
+                from(android.sourceSets.getByName("main").java.srcDirs)
+            })
+            
+            artifact(tasks.register("androidJavadocJar", Jar::class) {
+                archiveClassifier.set("javadoc")
+                from(tasks.register("androidJavadoc", Javadoc::class) {
+                    source(android.sourceSets.getByName("main").java.srcDirs)
+                    classpath += project.files(android.getBootClasspath().joinToString(File.pathSeparator))
+                    
+                    // Exclude failing documentation
+                    exclude("**/R.html", "**/R.*.html", "**/index.html")
+                    
+                    options {
+                        this as StandardJavadocDocletOptions
+                        addBooleanOption("Xdoclint:none", true)
+                        addStringOption("Xmaxwarns", "1")
+                        addStringOption("Xmaxerrs", "1")
+                        addStringOption("charSet", "UTF-8")
+                        links("https://docs.oracle.com/javase/8/docs/api/")
+                        links("https://developer.android.com/reference/")
+                    }
+                })
+            })
 
             pom {
                 name.set("Gr4vy Kotlin SDK")
@@ -222,7 +251,33 @@ publishing {
                         email.set("support@gr4vy.com")
                     }
                 }
+                
+                scm {
+                    connection.set("scm:git:git://github.com/gr4vy/gr4vy-kotlin.git")
+                    developerConnection.set("scm:git:ssh://github.com:gr4vy/gr4vy-kotlin.git")
+                    url.set("https://github.com/gr4vy/gr4vy-kotlin/tree/main")
+                }
             }
+        }
+    }
+}
+
+// Signing configuration for Maven Central
+signing {
+    val signingKey: String? by project
+    val signingPassword: String? by project
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign(publishing.publications["release"])
+}
+
+// Nexus publishing configuration
+nexusPublishing {
+    repositories {
+        sonatype {
+            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
+            username.set(project.findProperty("ossrhUsername") as String? ?: System.getenv("OSSRH_USERNAME"))
+            password.set(project.findProperty("ossrhPassword") as String? ?: System.getenv("OSSRH_PASSWORD"))
         }
     }
 }
