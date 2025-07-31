@@ -45,8 +45,8 @@ jobs:
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-          signingKey: ${{ secrets.SIGNING_KEY }}
-          signingPassword: ${{ secrets.SIGNING_PASSWORD }}
+          signingKey: ${{ secrets.JAVA_GPG_SECRET_KEY }}
+          signingPassword: ${{ secrets.JAVA_GPG_PASSPHRASE }}
 
       - name: Create Draft Release with Artifacts
         uses: ncipollo/release-action@v1
