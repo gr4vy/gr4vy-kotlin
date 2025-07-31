@@ -9,7 +9,6 @@ plugins {
 
 // Import required for Vanniktech Android publishing
 import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
-import com.vanniktech.maven.publish.SonatypeHost
 
 // ---- Version helpers (unchanged) ----
 
@@ -192,7 +191,7 @@ dependencies {
 
 mavenPublishing {
     // Explicitly use Central Portal host; release automatically after upload
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = true)
+    publishToMavenCentral(automaticRelease = true)
 
     // Sign all publications (reads signingInMemoryKey / signingInMemoryKeyPassword from CI)
     signAllPublications()
