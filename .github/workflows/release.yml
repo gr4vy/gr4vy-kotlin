@@ -41,13 +41,13 @@ jobs:
         run: ./gradlew assembleRelease
 
       - name: Publish to Maven Central
-        run: ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository
+        run: ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository --info
         env:
-          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-          signingKey: ${{ secrets.JAVA_GPG_SECRET_KEY }}
-          signingPassword: ${{ secrets.JAVA_GPG_PASSPHRASE }}
-
+          ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.OSSRH_USERNAME }}
+          ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.OSSRH_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.JAVA_GPG_SECRET_KEY }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.JAVA_GPG_PASSPHRASE }}
+          
       - name: Create Draft Release with Artifacts
         uses: ncipollo/release-action@v1
         with:
