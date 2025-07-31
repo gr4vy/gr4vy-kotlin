@@ -7,13 +7,10 @@ plugins {
     id("com.vanniktech.maven.publish") version "0.34.0"
 }
 
-// Import for Vanniktech Android configuration (this one is fine)
 import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
-// DO NOT import SonatypeHost; we’ll set the host via a property instead.
+// Host is set via property below; no SonatypeHost import needed.
 
-// ---- Version helpers (unchanged) ----
-
-// Function to extract version from Version.kt
+// ---- Version helpers ----
 fun getVersionFromKotlin(): String {
     val versionFile = file("src/main/kotlin/com/gr4vy/sdk/Version.kt")
     val versionRegex = """const val current = "(.+)"""".toRegex()
@@ -22,7 +19,6 @@ fun getVersionFromKotlin(): String {
     return matchResult?.groupValues?.get(1) ?: "1.0.0"
 }
 
-// Function to convert version string to version code
 fun getVersionCode(version: String): Int {
     val parts = version.split("-")[0].split(".")
     if (parts.size >= 3) {
@@ -36,32 +32,22 @@ fun getVersionCode(version: String): Int {
 
 val sdkVersion = getVersionFromKotlin()
 
-// Set Maven coordinates (group + version)
 group = "com.gr4vy"
 version = sdkVersion
 
-// Tell Vanniktech to use Sonatype Central Portal via a Gradle property
-// (equivalent to gradle.properties mavenCentralHost=CENTRAL_PORTAL)
+// Tell Vanniktech to use Sonatype Central Portal (same as gradle.properties mavenCentralHost=CENTRAL_PORTAL)
 extra["mavenCentralHost"] = "CENTRAL_PORTAL"
 
 android {
     namespace = "com.gr4vy.sdk"
     compileSdk = 36
 
-    // Publish the Android "release" variant (sources/javadoc jars come from Vanniktech config below)
-    publishing {
-        singleVariant("release") {
-            // no extra tweaks needed here
-        }
-    }
 
     defaultConfig {
         minSdk = 26
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
 
-        // Build configuration fields
         buildConfigField("String", "SDK_VERSION", "\"$sdkVersion\"")
         buildConfigField("boolean", "DEBUG_MODE", "false")
         // versionCode not used for libraries publishing to Maven Central
@@ -70,8 +56,7 @@ android {
 
     signingConfigs {
         create("release") {
-            // For Android libraries, we use debug signing in development.
-            // The consuming app signs its own APK/AAB; this does not affect Maven publication.
+            // Library signing for local builds only; unrelated to Maven signing
             if (project.hasProperty("RELEASE_STORE_FILE")) {
                 storeFile = file(project.property("RELEASE_STORE_FILE").toString())
                 storePassword = project.property("RELEASE_STORE_PASSWORD").toString()
@@ -104,14 +89,12 @@ android {
             isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
         }
-
         release {
             isMinifyEnabled = false
             isShrinkResources = false
             signingConfig = signingConfigs.getByName("release")
             buildConfigField("boolean", "DEBUG_MODE", "false")
         }
-
         create("benchmark") {
             initWith(getByName("release"))
             signingConfig = signingConfigs.getByName("debug")
@@ -193,7 +176,6 @@ dependencies {
 }
 
 // --------- Central Portal publishing via Vanniktech ---------
-
 mavenPublishing {
     // Use Central Portal & release automatically after upload.
     // Host is supplied via extra["mavenCentralHost"] = "CENTRAL_PORTAL" above.
