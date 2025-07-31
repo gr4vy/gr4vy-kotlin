@@ -3,12 +3,13 @@ plugins {
     id("org.jetbrains.kotlin.android") version "2.0.21"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
 
-    // Central Portal publishing (handles maven-publish & signing under the hood)
+    // Central Portal publishing (handles maven-publish & signing)
     id("com.vanniktech.maven.publish") version "0.34.0"
 }
 
-// Import required for Vanniktech Android publishing
+// Import for Vanniktech Android configuration (this one is fine)
 import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
+// DO NOT import SonatypeHost; we’ll set the host via a property instead.
 
 // ---- Version helpers (unchanged) ----
 
@@ -39,6 +40,10 @@ val sdkVersion = getVersionFromKotlin()
 group = "com.gr4vy"
 version = sdkVersion
 
+// Tell Vanniktech to use Sonatype Central Portal via a Gradle property
+// (equivalent to gradle.properties mavenCentralHost=CENTRAL_PORTAL)
+extra["mavenCentralHost"] = "CENTRAL_PORTAL"
+
 android {
     namespace = "com.gr4vy.sdk"
     compileSdk = 36
@@ -59,7 +64,7 @@ android {
         // Build configuration fields
         buildConfigField("String", "SDK_VERSION", "\"$sdkVersion\"")
         buildConfigField("boolean", "DEBUG_MODE", "false")
-        // Optional versionCode if you later convert this to an app; not used by libraries when publishing
+        // versionCode not used for libraries publishing to Maven Central
         // versionCode = getVersionCode(sdkVersion)
     }
 
@@ -190,7 +195,8 @@ dependencies {
 // --------- Central Portal publishing via Vanniktech ---------
 
 mavenPublishing {
-    // Explicitly use Central Portal host; release automatically after upload
+    // Use Central Portal & release automatically after upload.
+    // Host is supplied via extra["mavenCentralHost"] = "CENTRAL_PORTAL" above.
     publishToMavenCentral(automaticRelease = true)
 
     // Sign all publications (reads signingInMemoryKey / signingInMemoryKeyPassword from CI)
@@ -231,7 +237,7 @@ mavenPublishing {
         scm {
             url.set("https://github.com/gr4vy/gr4vy-kotlin")
             connection.set("scm:git:git://github.com/gr4vy/gr4vy-kotlin.git")
-            developerConnection.set("scm:git:ssh://github.com:gr4vy/gr4vy-kotlin.git")
+            developerConnection.set("scm:git:ssh://github.com/gr4vy/gr4vy-kotlin.git")
         }
     }
 }
