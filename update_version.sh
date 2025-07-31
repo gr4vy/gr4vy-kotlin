@@ -25,16 +25,30 @@ echo $NEW_VERSION > VERSION
 sed -i '' "s/const val current = \".*\"/const val current = \"$NEW_VERSION\"/" src/main/kotlin/com/gr4vy/sdk/Version.kt
 
 # Update test files that might reference the version (if they exist)
+if [ -f "src/test/kotlin/com/gr4vy/sdk/SimpleTest.kt" ]; then
+    sed -i '' "s/assertEquals(\".*\", Version.current)/assertEquals(\"$NEW_VERSION\", Version.current)/" src/test/kotlin/com/gr4vy/sdk/SimpleTest.kt
+fi
+
+if [ -f "src/test/kotlin/com/gr4vy/sdk/VersionTest.kt" ]; then
+    sed -i '' "s/assertEquals(\".*\", Version.current)/assertEquals(\"$NEW_VERSION\", Version.current)/" src/test/kotlin/com/gr4vy/sdk/VersionTest.kt
+fi
+
 if [ -f "src/test/kotlin/com/gr4vy/sdk/Gr4vySDKTest.kt" ]; then
     sed -i '' "s/assertEquals(\".*\", Gr4vySDK.version)/assertEquals(\"$NEW_VERSION\", Gr4vySDK.version)/" src/test/kotlin/com/gr4vy/sdk/Gr4vySDKTest.kt
 fi
 
-if [ -f "src/test/kotlin/com/gr4vy/sdk/VersionTest.kt" ]; then
-    sed -i '' "s/assertEquals(\".*\", version)/assertEquals(\"$NEW_VERSION\", version)/" src/test/kotlin/com/gr4vy/sdk/VersionTest.kt
-fi
-
-# Update README.md if it contains version references
-if grep -q "Version.*[0-9]\+\.[0-9]\+\.[0-9]\+" README.md; then
+# Update README.md dependency examples
+if [ -f "README.md" ]; then
+    # Update Gradle Kotlin DSL dependency
+    sed -i '' "s/implementation(\"com.gr4vy:gr4vy-kotlin:.*\")/implementation(\"com.gr4vy:gr4vy-kotlin:$NEW_VERSION\")/" README.md
+    
+    # Update Gradle Groovy dependency  
+    sed -i '' "s/implementation 'com.gr4vy:gr4vy-kotlin:.*'/implementation 'com.gr4vy:gr4vy-kotlin:$NEW_VERSION'/" README.md
+    
+    # Update Maven dependency
+    sed -i '' "s/<version>.*<\/version>/<version>$NEW_VERSION<\/version>/" README.md
+    
+    # Update any other version references in README
     sed -i '' "s/Version [0-9]\+\.[0-9]\+\.[0-9]\+[^[:space:]]*/Version $NEW_VERSION/" README.md
 fi
 
@@ -43,11 +57,17 @@ echo ""
 echo "Updated files:"
 echo "- VERSION"
 echo "- src/main/kotlin/com/gr4vy/sdk/Version.kt"
-if [ -f "src/test/kotlin/com/gr4vy/sdk/Gr4vySDKTest.kt" ]; then
-    echo "- src/test/kotlin/com/gr4vy/sdk/Gr4vySDKTest.kt"
+if [ -f "src/test/kotlin/com/gr4vy/sdk/SimpleTest.kt" ]; then
+    echo "- src/test/kotlin/com/gr4vy/sdk/SimpleTest.kt"
 fi
 if [ -f "src/test/kotlin/com/gr4vy/sdk/VersionTest.kt" ]; then
     echo "- src/test/kotlin/com/gr4vy/sdk/VersionTest.kt"
+fi
+if [ -f "src/test/kotlin/com/gr4vy/sdk/Gr4vySDKTest.kt" ]; then
+    echo "- src/test/kotlin/com/gr4vy/sdk/Gr4vySDKTest.kt"
+fi
+if [ -f "README.md" ]; then
+    echo "- README.md (dependency examples)"
 fi
 echo ""
 echo "Files that automatically read from Version.kt:"
