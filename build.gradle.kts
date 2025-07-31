@@ -194,6 +194,28 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 }
 
+// Register tasks for Maven Central publishing artifacts
+tasks.register("androidSourcesJar", Jar::class) {
+    archiveClassifier.set("sources")
+    from(android.sourceSets.getByName("main").java.srcDirs)
+}
+
+tasks.register("androidJavadocJar", Jar::class) {
+    archiveClassifier.set("javadoc")
+    // Create empty javadoc jar to satisfy Maven Central requirements
+    // Full javadoc generation can be complex for Android libraries
+    val javadocDir = layout.buildDirectory.dir("tmp/javadoc")
+    from(javadocDir)
+    
+    doFirst {
+        javadocDir.get().asFile.mkdirs()
+        javadocDir.get().file("README.txt").asFile.writeText(
+            "This library uses Kotlin with inline documentation.\n" +
+            "Please refer to the source code and GitHub repository for documentation."
+        )
+    }
+}
+
 publishing {
     publications {
         register<MavenPublication>("release") {
@@ -206,31 +228,8 @@ publishing {
             }
             
             // Required artifacts for Maven Central
-            artifact(tasks.register("androidSourcesJar", Jar::class) {
-                archiveClassifier.set("sources")
-                from(android.sourceSets.getByName("main").java.srcDirs)
-            })
-            
-            artifact(tasks.register("androidJavadocJar", Jar::class) {
-                archiveClassifier.set("javadoc")
-                from(tasks.register("androidJavadoc", Javadoc::class) {
-                    source(android.sourceSets.getByName("main").java.srcDirs)
-                    classpath += project.files(android.getBootClasspath().joinToString(File.pathSeparator))
-                    
-                    // Exclude failing documentation
-                    exclude("**/R.html", "**/R.*.html", "**/index.html")
-                    
-                    options {
-                        this as StandardJavadocDocletOptions
-                        addBooleanOption("Xdoclint:none", true)
-                        addStringOption("Xmaxwarns", "1")
-                        addStringOption("Xmaxerrs", "1")
-                        addStringOption("charSet", "UTF-8")
-                        links("https://docs.oracle.com/javase/8/docs/api/")
-                        links("https://developer.android.com/reference/")
-                    }
-                })
-            })
+            artifact(tasks.named("androidSourcesJar"))
+            artifact(tasks.named("androidJavadocJar"))
 
             pom {
                 name.set("Gr4vy Kotlin SDK")
