@@ -7,11 +7,15 @@ import com.gr4vy.sdk.services.Gr4vyPaymentMethodsService
 import com.gr4vy.sdk.services.Gr4vyPaymentOptionsService
 import com.gr4vy.sdk.http.Gr4vyHttpClientFactory
 import com.gr4vy.sdk.http.Gr4vyHttpClientFactoryProvider
+import com.gr4vy.sdk.http.Gr4vyHttpConfiguration
+import com.gr4vy.sdk.http.Gr4vyHttpClient
+import com.gr4vy.sdk.http.Gr4vyHttpClientProtocol
 import com.gr4vy.sdk.utils.Gr4vyLogger
 import com.gr4vy.sdk.utils.Gr4vyErrorHandler
 import com.gr4vy.sdk.utils.Gr4vyMemoryManager
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import okhttp3.OkHttpClient
 
 class Gr4vy @Throws(Gr4vyError::class) constructor(
     gr4vyId: String,
@@ -20,8 +24,27 @@ class Gr4vy @Throws(Gr4vyError::class) constructor(
     server: Gr4vyServer,
     timeout: Double = 30.0,
     var debugMode: Boolean = false,
-    private val httpClientFactory: Gr4vyHttpClientFactory = Gr4vyHttpClientFactoryProvider.defaultFactory
+    httpClient: OkHttpClient? = null,
+    httpClientFactory: Gr4vyHttpClientFactory? = null
 ) {
+    
+    private val clientFactory: Gr4vyHttpClientFactory = when {
+        // If OkHttpClient is provided, create a simple factory for it
+        httpClient != null -> object : Gr4vyHttpClientFactory {
+            override fun create(
+                setup: Gr4vySetup,
+                debugMode: Boolean,
+                client: OkHttpClient
+            ): Gr4vyHttpClientProtocol {
+                val configuration = Gr4vyHttpConfiguration(setup, debugMode, httpClient)
+                return Gr4vyHttpClient(configuration)
+            }
+        }
+        // If httpClientFactory is provided, use it
+        httpClientFactory != null -> httpClientFactory
+        // Otherwise use the default
+        else -> Gr4vyHttpClientFactoryProvider.defaultFactory
+    }
     
     @Volatile
     private var _setup: Gr4vySetup? = null
@@ -47,10 +70,10 @@ class Gr4vy @Throws(Gr4vyError::class) constructor(
         val setupConfig = Gr4vySetup(gr4vyId, token, merchantId, server, timeout)
         _setup = setupConfig
         
-        paymentOptions = Gr4vyPaymentOptionsService(setupConfig, debugMode, httpClientFactory)
-        cardDetails = Gr4vyCardDetailsService(setupConfig, debugMode, httpClientFactory)
-        paymentMethods = Gr4vyPaymentMethodsService(setupConfig, debugMode, httpClientFactory)
-        checkoutSession = Gr4vyCheckoutSessionService(setupConfig, debugMode, httpClientFactory)
+        paymentOptions = Gr4vyPaymentOptionsService(setupConfig, debugMode, clientFactory)
+        cardDetails = Gr4vyCardDetailsService(setupConfig, debugMode, clientFactory)
+        paymentMethods = Gr4vyPaymentMethodsService(setupConfig, debugMode, clientFactory)
+        checkoutSession = Gr4vyCheckoutSessionService(setupConfig, debugMode, clientFactory)
         
         if (debugMode) {
             Gr4vyLogger.info("Gr4vy SDK initialized with gr4vyId: $gr4vyId, server: ${server.value}")
