@@ -310,6 +310,180 @@ class Gr4vyUtilityTest {
         }
     }
 
+    // MARK: - Versioning URL Tests
+
+    @Test
+    fun `test versioningURL with sandbox server`() {
+        val sessionId = "session_12345"
+        val url = Gr4vyUtility.versioningURL(sandboxSetup, sessionId)
+        
+        assertEquals("https://api.sandbox.acme.gr4vy.app/checkout/sessions/session_12345/three-d-secure-version", url.toString())
+        assertEquals("https", url.protocol)
+        assertEquals("api.sandbox.acme.gr4vy.app", url.host)
+        assertEquals("/checkout/sessions/session_12345/three-d-secure-version", url.path)
+    }
+
+    @Test
+    fun `test versioningURL with production server`() {
+        val sessionId = "session_67890"
+        val url = Gr4vyUtility.versioningURL(productionSetup, sessionId)
+        
+        assertEquals("https://api.acme.gr4vy.app/checkout/sessions/session_67890/three-d-secure-version", url.toString())
+        assertEquals("https", url.protocol)
+        assertEquals("api.acme.gr4vy.app", url.host)
+        assertEquals("/checkout/sessions/session_67890/three-d-secure-version", url.path)
+    }
+
+    @Test(expected = Gr4vyError.BadURL::class)
+    fun `test versioningURL throws error for empty gr4vyId`() {
+        Gr4vyUtility.versioningURL(emptyIdSetup, "session_123")
+    }
+
+    @Test(expected = Gr4vyError.BadURL::class)
+    fun `test versioningURL throws error for empty session ID`() {
+        Gr4vyUtility.versioningURL(sandboxSetup, "")
+    }
+
+    @Test
+    fun `test versioningURL error messages`() {
+        // Test empty gr4vyId error
+        try {
+            Gr4vyUtility.versioningURL(emptyIdSetup, "session_123")
+            fail("Should have thrown Gr4vyError.BadURL")
+        } catch (e: Gr4vyError.BadURL) {
+            assertEquals("Invalid URL configuration: Gr4vy ID is empty", e.message)
+        }
+
+        // Test empty session ID error
+        try {
+            Gr4vyUtility.versioningURL(sandboxSetup, "")
+            fail("Should have thrown Gr4vyError.BadURL")
+        } catch (e: Gr4vyError.BadURL) {
+            assertEquals("Invalid URL configuration: Checkout session ID is empty", e.message)
+        }
+    }
+
+    @Test
+    fun `test versioningURL with special characters in session ID`() {
+        val sessionId = "session_test-123_abc"
+        val url = Gr4vyUtility.versioningURL(sandboxSetup, sessionId)
+        
+        assertTrue("URL should contain session ID", url.toString().contains(sessionId))
+        assertEquals("/checkout/sessions/session_test-123_abc/three-d-secure-version", url.path)
+    }
+
+    // MARK: - Create Transaction URL Tests
+
+    @Test
+    fun `test createTransactionURL with sandbox server`() {
+        val sessionId = "session_12345"
+        val url = Gr4vyUtility.createTransactionURL(sandboxSetup, sessionId)
+        
+        assertEquals("https://api.sandbox.acme.gr4vy.app/checkout/sessions/session_12345/three-d-secure-authenticate", url.toString())
+        assertEquals("https", url.protocol)
+        assertEquals("api.sandbox.acme.gr4vy.app", url.host)
+        assertEquals("/checkout/sessions/session_12345/three-d-secure-authenticate", url.path)
+    }
+
+    @Test
+    fun `test createTransactionURL with production server`() {
+        val sessionId = "session_67890"
+        val url = Gr4vyUtility.createTransactionURL(productionSetup, sessionId)
+        
+        assertEquals("https://api.acme.gr4vy.app/checkout/sessions/session_67890/three-d-secure-authenticate", url.toString())
+        assertEquals("https", url.protocol)
+        assertEquals("api.acme.gr4vy.app", url.host)
+        assertEquals("/checkout/sessions/session_67890/three-d-secure-authenticate", url.path)
+    }
+
+    @Test(expected = Gr4vyError.BadURL::class)
+    fun `test createTransactionURL throws error for empty gr4vyId`() {
+        Gr4vyUtility.createTransactionURL(emptyIdSetup, "session_123")
+    }
+
+    @Test(expected = Gr4vyError.BadURL::class)
+    fun `test createTransactionURL throws error for empty session ID`() {
+        Gr4vyUtility.createTransactionURL(sandboxSetup, "")
+    }
+
+    @Test
+    fun `test createTransactionURL error messages`() {
+        // Test empty gr4vyId error
+        try {
+            Gr4vyUtility.createTransactionURL(emptyIdSetup, "session_123")
+            fail("Should have thrown Gr4vyError.BadURL")
+        } catch (e: Gr4vyError.BadURL) {
+            assertEquals("Invalid URL configuration: Gr4vy ID is empty", e.message)
+        }
+
+        // Test empty session ID error
+        try {
+            Gr4vyUtility.createTransactionURL(sandboxSetup, "")
+            fail("Should have thrown Gr4vyError.BadURL")
+        } catch (e: Gr4vyError.BadURL) {
+            assertEquals("Invalid URL configuration: Checkout session ID is empty", e.message)
+        }
+    }
+
+    @Test
+    fun `test createTransactionURL with special characters in session ID`() {
+        val sessionId = "session_test-123_abc"
+        val url = Gr4vyUtility.createTransactionURL(sandboxSetup, sessionId)
+        
+        assertTrue("URL should contain session ID", url.toString().contains(sessionId))
+        assertEquals("/checkout/sessions/session_test-123_abc/three-d-secure-authenticate", url.path)
+    }
+
+    // MARK: - 3DS URL Format Tests
+
+    @Test
+    fun `test 3DS URL format consistency`() {
+        val sessionId = "test_session"
+        
+        val versioningUrl = Gr4vyUtility.versioningURL(sandboxSetup, sessionId)
+        val createTransactionUrl = Gr4vyUtility.createTransactionURL(sandboxSetup, sessionId)
+        
+        // Both URLs should use HTTPS
+        assertEquals("https", versioningUrl.protocol)
+        assertEquals("https", createTransactionUrl.protocol)
+        
+        // Both URLs should use the same host for sandbox
+        val expectedHost = "api.sandbox.acme.gr4vy.app"
+        assertEquals(expectedHost, versioningUrl.host)
+        assertEquals(expectedHost, createTransactionUrl.host)
+        
+        // Both URLs should use port 443 (default for HTTPS)
+        assertEquals(-1, versioningUrl.port) // -1 indicates default port
+        assertEquals(-1, createTransactionUrl.port)
+        
+        // Both URLs should include the session ID in the path
+        assertTrue("Versioning URL should contain session ID", versioningUrl.path.contains(sessionId))
+        assertTrue("Create transaction URL should contain session ID", createTransactionUrl.path.contains(sessionId))
+    }
+
+    @Test
+    fun `test all URL methods with 3DS endpoints respect server environment`() {
+        val sessionId = "test_session"
+        
+        // Test sandbox URLs
+        val sandboxVersioning = Gr4vyUtility.versioningURL(sandboxSetup, sessionId)
+        val sandboxTransaction = Gr4vyUtility.createTransactionURL(sandboxSetup, sessionId)
+        
+        listOf(sandboxVersioning, sandboxTransaction).forEach { url ->
+            assertTrue("Sandbox URL should contain sandbox subdomain: ${url.host}", 
+                      url.host.contains("sandbox"))
+        }
+        
+        // Test production URLs
+        val productionVersioning = Gr4vyUtility.versioningURL(productionSetup, sessionId)
+        val productionTransaction = Gr4vyUtility.createTransactionURL(productionSetup, sessionId)
+        
+        listOf(productionVersioning, productionTransaction).forEach { url ->
+            assertFalse("Production URL should not contain sandbox subdomain: ${url.host}", 
+                       url.host.contains("sandbox"))
+        }
+    }
+
     // MARK: - Object Behavior Tests
 
     @Test

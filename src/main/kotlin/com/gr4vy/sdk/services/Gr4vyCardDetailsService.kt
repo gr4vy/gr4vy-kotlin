@@ -22,7 +22,8 @@ class Gr4vyCardDetailsService(
     private val httpClientFactory: Gr4vyHttpClientFactory
 ) {
     
-    val debugMode: Boolean = configuration.debugMode
+    val debugMode: Boolean
+        get() = configuration.debugMode
     
     constructor(
         setup: Gr4vySetup, 

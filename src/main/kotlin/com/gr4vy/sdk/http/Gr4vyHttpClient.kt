@@ -18,6 +18,7 @@ import com.gr4vy.sdk.requests.Gr4vyPaymentOptionRequest
 import com.gr4vy.sdk.requests.Gr4vyBuyersPaymentMethodsRequest
 import com.gr4vy.sdk.requests.Gr4vyCardDetailsRequest
 import com.gr4vy.sdk.requests.Gr4vyCheckoutSessionRequest
+import com.gr4vy.sdk.requests.Gr4vyThreeDSecureAuthenticateRequest
 import java.net.URLEncoder
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
@@ -248,6 +249,9 @@ class Gr4vyHttpClient(
             }
             body is Gr4vyCheckoutSessionRequest -> {
                 checkoutSessionJson.encodeToString(body as Gr4vyCheckoutSessionRequest)
+            }
+            body is Gr4vyThreeDSecureAuthenticateRequest -> {
+                json.encodeToString(body as Gr4vyThreeDSecureAuthenticateRequest)
             }
             else -> {
                 // Fallback to toString for unknown types (maintaining backward compatibility)

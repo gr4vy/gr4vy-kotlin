@@ -78,4 +78,44 @@ object Gr4vyUtility {
             throw Gr4vyError.BadURL("Failed to construct buyers payment methods URL")
         }
     }
+    
+    @Throws(Gr4vyError.BadURL::class)
+    fun versioningURL(setup: Gr4vySetup, checkoutSessionId: String): URL {
+        if (setup.gr4vyId.isEmpty()) {
+            throw Gr4vyError.BadURL("Gr4vy ID is empty")
+        }
+        if (checkoutSessionId.isEmpty()) {
+            throw Gr4vyError.BadURL("Checkout session ID is empty")
+        }
+        
+        val subdomainPrefix = if (setup.server == Gr4vyServer.SANDBOX) "sandbox." else ""
+        
+        val urlString = "https://api.$subdomainPrefix${setup.gr4vyId}.gr4vy.app/checkout/sessions/$checkoutSessionId/three-d-secure-version"
+        
+        return try {
+            URL(urlString)
+        } catch (e: MalformedURLException) {
+            throw Gr4vyError.BadURL("Failed to construct 3DS versioning URL")
+        }
+    }
+    
+    @Throws(Gr4vyError.BadURL::class)
+    fun createTransactionURL(setup: Gr4vySetup, checkoutSessionId: String): URL {
+        if (setup.gr4vyId.isEmpty()) {
+            throw Gr4vyError.BadURL("Gr4vy ID is empty")
+        }
+        if (checkoutSessionId.isEmpty()) {
+            throw Gr4vyError.BadURL("Checkout session ID is empty")
+        }
+        
+        val subdomainPrefix = if (setup.server == Gr4vyServer.SANDBOX) "sandbox." else ""
+        
+        val urlString = "https://api.$subdomainPrefix${setup.gr4vyId}.gr4vy.app/checkout/sessions/$checkoutSessionId/three-d-secure-authenticate"
+        
+        return try {
+            URL(urlString)
+        } catch (e: MalformedURLException) {
+            throw Gr4vyError.BadURL("Failed to construct 3DS authentication URL")
+        }
+    }
 } 

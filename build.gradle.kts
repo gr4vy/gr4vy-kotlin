@@ -121,6 +121,7 @@ android {
         buildConfig = true
         resValues = false
         shaders = false
+        androidResources = true  // Enable resources for Netcetera DS logos
     }
 
     packaging {
@@ -165,6 +166,15 @@ dependencies {
     // Networking
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
+    // Netcetera 3DS SDK (manual bundling - single artifact approach)
+    // The Netcetera SDK is bundled into this library as per official documentation:
+    // https://3dss.netcetera.com/3dssdk/doc/2.25.0/android-integration
+    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
+    
+    // Netcetera SDK external dependencies (not embedded - must be provided)
+    implementation("org.bouncycastle:bcprov-jdk15to18:1.79")
+    implementation("org.slf4j:slf4j-api:1.7.36")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
@@ -182,7 +192,10 @@ mavenPublishing {
     publishToMavenCentral(automaticRelease = true)
 
     // Sign all publications (reads signingInMemoryKey / signingInMemoryKeyPassword from CI)
-    signAllPublications()
+    // Skip signing for local development (set -PskipSigning=true)
+    if (!project.hasProperty("skipSigning") || project.property("skipSigning") != "true") {
+        signAllPublications()
+    }
 
     // Publish the Android "release" variant with sources & javadoc jars
     configure(

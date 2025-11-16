@@ -30,10 +30,14 @@ A [Kotlin client app](https://github.com/gr4vy/gr4vy-kotlin-client-app) that use
   - [Per-Request Timeout](#per-request-timeout)
   - [Default Timeout Values](#default-timeout-values)
 - [Available Operations](#available-operations)
-  - [Vault card details](#vault-card-details)
+  - [Tokenize card details](#vault-card-details)
+  - [Tokenize card details with 3D Secure authentication](#vault-card-details-with-3d-secure-authentication)
   - [List available payment options](#list-available-payment-options)
   - [Get card details](#get-card-details)
   - [List buyer's payment methods](#list-buyers-payment-methods)
+- [3D Secure Authentication](#3d-secure-authentication)
+  - [Overview](#overview)
+  - [Customizing the 3DS UI](#customizing-the-3ds-ui)
 - [Error Handling](#error-handling)
   - [Example](#example-1)
 - [Server Selection](#server-selection)
@@ -64,7 +68,7 @@ Add the following to your `build.gradle.kts` (Module: app):
 
 ```kotlin
 dependencies {
-    implementation("com.gr4vy:gr4vy-kotlin:1.0.0-beta.6")
+    implementation("com.gr4vy:gr4vy-kotlin:1.0.0-beta.7")
 }
 ```
 
@@ -72,7 +76,7 @@ Or in Groovy syntax (`build.gradle`):
 
 ```groovy
 dependencies {
-    implementation 'com.gr4vy:gr4vy-kotlin:1.0.0-beta.6'
+    implementation 'com.gr4vy:gr4vy-kotlin:1.0.0-beta.7'
 }
 ```
 
@@ -84,7 +88,7 @@ Add the following to your `pom.xml`:
 <dependency>
     <groupId>com.gr4vy</groupId>
     <artifactId>gr4vy-kotlin</artifactId>
-    <version>1.0.0-beta.6</version>
+    <version>1.0.0-beta.7</version>
 </dependency>
 ```
 
@@ -236,9 +240,9 @@ val buyersRequest = Gr4vyBuyersPaymentMethodsRequest(
 
 ## Available Operations
 
-### Vault card details
+### Tokenize card details
 
-Stores the card details you collected into a Gr4vy checkout session.
+Stores the card details you collected into a Gr4vy checkout session without 3D Secure authentication.
 
 ```kotlin
 // Create card data
@@ -279,6 +283,90 @@ gr4vy.tokenize(
     }
 }
 ```
+
+### Tokenize card details with 3D Secure authentication
+
+Stores card details with optional 3D Secure authentication. When authentication is enabled, the SDK will automatically handle 3DS Secure flows.
+
+```kotlin
+// Create card data
+val cardData = Gr4vyCheckoutSessionRequest(
+    paymentMethod = Gr4vyPaymentMethod.Card(
+        number = "4111111111111111",
+        expirationDate = "12/25",
+        securityCode = "123"
+    )
+)
+
+// Tokenize with 3DS authentication (suspend function)
+lifecycleScope.launch {
+    try {
+        val result = gr4vy.tokenize(
+            checkoutSessionId = "session_123",
+            cardData = cardData,
+            activity = this@PaymentActivity,
+            sdkMaxTimeoutMinutes = 5,
+            authenticate = true
+        )
+        
+        if (result.tokenized) {
+            println("Payment method tokenized successfully")
+            
+            // Check authentication details
+            result.authentication?.let { auth ->
+                println("3DS attempted: ${auth.attempted}")
+                println("Authentication type: ${auth.type}")
+                println("Transaction status: ${auth.transactionStatus}")
+                
+                if (auth.hasCancelled) {
+                    println("User cancelled authentication")
+                }
+                if (auth.hasTimedOut) {
+                    println("Authentication timed out")
+                }
+            }
+        }
+    } catch (error: Gr4vyError) {
+        println("Error tokenizing payment method: $error")
+    }
+}
+
+// Callback version
+gr4vy.tokenize(
+    checkoutSessionId = "session_123",
+    cardData = cardData,
+    activity = this@PaymentActivity,
+    sdkMaxTimeoutMinutes = 5,
+    authenticate = true
+) { result ->
+    when {
+        result.isSuccess -> {
+            val tokenizeResult = result.getOrNull()
+            if (tokenizeResult?.tokenized == true) {
+                println("Payment method tokenized successfully")
+                tokenizeResult.authentication?.let { auth ->
+                    println("Transaction status: ${auth.transactionStatus}")
+                }
+            }
+        }
+        result.isFailure -> {
+            println("Error tokenizing payment method: ${result.exceptionOrNull()}")
+        }
+    }
+}
+```
+
+**Parameters:**
+- `checkoutSessionId`: The checkout session ID from Gr4vy
+- `cardData`: The payment method data to tokenize
+- `activity`: The Activity context for presenting 3DS challenge
+- `sdkMaxTimeoutMinutes`: Maximum time for 3DS authentication in minutes (default: 5)
+- `authenticate`: This controls if we should attempt to authenticate the card data (default: false)
+- `uiCustomization`: (Optional) UI customization for the 3DS challenge screen
+
+**Returns:** `Gr4vyTokenizeResult` containing:
+- `tokenized`: Boolean indicating if tokenization was successful
+- `authentication`: Optional `Gr4vyAuthentication` object with authentication details
 
 ### List available payment options
 
@@ -412,6 +500,153 @@ gr4vy.paymentMethods.list(request) { result ->
 }
 ```
 
+## 3D Secure Authentication
+
+### Overview
+
+The SDK provides support for 3D Secure (3DS) authentication, and handles flows automatically. 
+
+**Authentication Flows:**
+
+1. **Frictionless Flow**: Authentication completes in the background without user interaction
+2. **Challenge Flow**: User is presented with an authentication challenge (e.g., entering an OTP code)
+
+**Transaction Status Codes:**
+
+The authentication result includes a transaction status code that indicates the outcome.
+
+### Customizing the 3DS UI
+
+You can customize the appearance of the 3DS challenge screen to match your app's design. The SDK supports separate customizations for light and dark modes.
+
+**Example: Basic Customization**
+
+```kotlin
+// Create toolbar customization
+val toolbar = Gr4vyThreeDSToolbarCustomization(
+    textFontName = "sans-serif-medium",
+    textFontSize = 17,
+    textColorHex = "#FFFFFF",
+    backgroundColorHex = "#007AFF",
+    headerText = "Secure Verification",
+    buttonText = "Cancel"
+)
+
+// Create button customizations
+val submitButton = Gr4vyThreeDSButtonCustomization(
+    textFontSize = 16,
+    textColorHex = "#FFFFFF",
+    backgroundColorHex = "#007AFF",
+    cornerRadius = 8
+)
+
+val cancelButton = Gr4vyThreeDSButtonCustomization(
+    textFontSize = 16,
+    textColorHex = "#007AFF",
+    backgroundColorHex = "#F0F0F0",
+    cornerRadius = 8
+)
+
+// Create label customization
+val label = Gr4vyThreeDSLabelCustomization(
+    textFontSize = 14,
+    textColorHex = "#333333",
+    headingTextFontSize = 18,
+    headingTextColorHex = "#000000"
+)
+
+// Create text box customization
+val textBox = Gr4vyThreeDSTextBoxCustomization(
+    textFontSize = 16,
+    textColorHex = "#000000",
+    borderWidth = 1,
+    borderColorHex = "#CCCCCC",
+    cornerRadius = 4
+)
+
+// Combine into UI customization
+val uiCustomization = Gr4vyThreeDSUiCustomization(
+    label = label,
+    toolbar = toolbar,
+    textBox = textBox,
+    buttons = mapOf(
+        Gr4vyThreeDSButtonType.SUBMIT to submitButton,
+        Gr4vyThreeDSButtonType.CANCEL to cancelButton
+    )
+)
+
+// Use with tokenization
+val result = gr4vy.tokenize(
+    checkoutSessionId = "session_123",
+    cardData = cardData,
+    activity = this@PaymentActivity,
+    authenticate = true,
+    uiCustomization = Gr4vyThreeDSUiCustomizationMap(default = uiCustomization)
+)
+```
+
+**Example: Light and Dark Mode Support**
+
+```kotlin
+// Light mode customization
+val lightCustomization = Gr4vyThreeDSUiCustomization(
+    label = Gr4vyThreeDSLabelCustomization(
+        textColorHex = "#333333",
+        headingTextColorHex = "#000000"
+    ),
+    toolbar = Gr4vyThreeDSToolbarCustomization(
+        textColorHex = "#000000",
+        backgroundColorHex = "#F8F8F8"
+    ),
+    view = Gr4vyThreeDSViewCustomization(
+        challengeViewBackgroundColorHex = "#FFFFFF",
+        progressViewBackgroundColorHex = "#F0F0F0"
+    )
+)
+
+// Dark mode customization
+val darkCustomization = Gr4vyThreeDSUiCustomization(
+    label = Gr4vyThreeDSLabelCustomization(
+        textColorHex = "#E0E0E0",
+        headingTextColorHex = "#FFFFFF"
+    ),
+    toolbar = Gr4vyThreeDSToolbarCustomization(
+        textColorHex = "#FFFFFF",
+        backgroundColorHex = "#1C1C1E"
+    ),
+    view = Gr4vyThreeDSViewCustomization(
+        challengeViewBackgroundColorHex = "#000000",
+        progressViewBackgroundColorHex = "#1C1C1E"
+    )
+)
+
+// Create customization map with both modes
+val customizations = Gr4vyThreeDSUiCustomizationMap(
+    default = lightCustomization,
+    dark = darkCustomization
+)
+
+// Use with tokenization
+val result = gr4vy.tokenize(
+    checkoutSessionId = "session_123",
+    cardData = cardData,
+    activity = this@PaymentActivity,
+    authenticate = true,
+    uiCustomization = customizations
+)
+```
+
+**Available Customization Options:**
+
+- **Toolbar**: Header text, button text, colors, and fonts
+- **Labels**: Body text and heading styles
+- **Buttons**: Individual styling for different button types (submit, cancel, next, etc.)
+- **Text Boxes**: Input field styling including borders and corner radius
+- **View**: Background colors for the challenge and progress views
+
+All color values should be provided as hexadecimal strings (e.g., `"#007AFF"`).
+
+<!-- Start Error Handling [errors] -->
 ## Error Handling
 
 By default, an API error will throw a `Gr4vyError` exception. The SDK provides error handling with specific error types. They are:
@@ -423,6 +658,8 @@ By default, an API error will throw a `Gr4vyError` exception. The SDK provides e
 | `HttpError`              | HTTP request failed      |
 | `NetworkError`           | Network connectivity issues |
 | `DecodingError`          | JSON decoding failed     |
+| `ThreeDSError`           | 3D Secure authentication error |
+| `UiContextError`         | Activity context required for 3DS UI |
 
 ### Example
 
@@ -454,11 +691,19 @@ lifecycleScope.launch {
             is Gr4vyError.DecodingError -> {
                 println("Decoding error: ${error.errorMessage}")
             }
+            is Gr4vyError.ThreeDSError -> {
+                println("3D Secure authentication error: ${error.message}")
+            }
+            is Gr4vyError.UiContextError -> {
+                println("UI context error (Activity required): ${error.message}")
+            }
         }
     }
 }
 ```
+<!-- End Error Handling [errors] -->
 
+<!-- Start Server Selection [server] -->
 ## Server Selection
 
 ### Select Server by Name
@@ -483,7 +728,9 @@ val gr4vy = Gr4vy(
     debugMode = false
 )
 ```
+<!-- End Server Selection [server] -->
 
+<!-- Start Debugging [debug] -->
 ## Debugging
 
 ### Debug Mode
@@ -518,6 +765,7 @@ Example output:
 ```
 
 **WARNING**: This should only be used for temporary debugging purposes. Leaving this option on in a production system could expose credentials/secrets in logs. Authorization headers are automatically redacted.
+<!-- End Debugging [debug] -->
 
 ## Memory Management
 

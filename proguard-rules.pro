@@ -130,12 +130,51 @@
 -keepattributes RuntimeVisibleParameterAnnotations,RuntimeInvisibleParameterAnnotations
 
 # ------------------------------------------------------------------------------
+# NETCETERA 3DS SDK
+# ------------------------------------------------------------------------------
+# These rules ensure the Netcetera 3DS SDK functions correctly when bundled
+# into the Gr4vy SDK. Rules are based on official Netcetera documentation:
+# https://3dss.netcetera.com/3dssdk/doc/2.25.0/android-integration
+
+# Keep all Netcetera SDK classes and methods
+-keep,includedescriptorclasses,includecode class com.netcetera.threeds.sdk.** { *; }
+-keepnames class com.netcetera.threeds.sdk.** { *; }
+-dontwarn com.netcetera.threeds.sdk.**
+
+# Keep Netcetera SDK drawable resources (card scheme logos)
+-keepresources drawable/ds_logo_visa
+-keepresources drawable/ds_logo_mastercard
+-keepresources drawable/ds_logo_amex
+-keepresources drawable/ds_logo_diners
+-keepresources drawable/ds_logo_cb
+-keepresources drawable/ds_logo_eftpos
+-keepresources drawable/ds_logo_jcb
+-keepresources drawable/ds_logo_union
+-keepresources drawable/cb_background
+-keepresources drawable/ic_password_toggle_masked
+-keepresources drawable/ic_password_toggle_visible
+
+# Keep Netcetera SDK asset files (infrastructure files required by SDK)
+-keepresourcefiles assets/com/netcetera/threeds/sdk/infrastructure/**
+
+# Keep Netcetera SDK native libraries (if bundled manually)
+-keepresourcefiles jni/arm64-v8a/libae63.so,jni/armeabi-v7a/libae63.so,jni/x86/libae63.so,jni/x86_64/libae63.so
+
+# Keep BouncyCastle (Netcetera dependency - not embedded)
+-keep class org.bouncycastle.** { *; }
+-keepnames class org.bouncycastle.** { *; }
+
+# Keep SLF4J (Netcetera dependency - not embedded)
+-keep class org.slf4j.** { *; }
+-dontwarn org.slf4j.**
+
+# ------------------------------------------------------------------------------
 # DEPENDENCY WARNINGS SUPPRESSION
 # ------------------------------------------------------------------------------
 # These rules suppress warnings for optional dependencies that may not be
 # present in all consumer applications.
 
 -dontwarn org.conscrypt.**      # Alternative SSL/TLS provider
--dontwarn org.bouncycastle.**   # Alternative cryptography provider  
+-dontwarn org.bouncycastle.**   # Alternative cryptography provider (also used by Netcetera)
 -dontwarn org.openjsse.**       # Alternative SSL/TLS provider
 -dontwarn javax.annotation.**   # Optional annotation processing 

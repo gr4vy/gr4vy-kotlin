@@ -31,7 +31,8 @@ class Gr4vyCheckoutSessionService(
     private val httpClientFactory: Gr4vyHttpClientFactory
 ) {
     
-    val debugMode: Boolean = configuration.debugMode
+    val debugMode: Boolean
+        get() = configuration.debugMode
     
     constructor(
         setup: Gr4vySetup, 
@@ -100,14 +101,18 @@ class Gr4vyCheckoutSessionService(
         cardData: TRequest,
         responseClass: Class<TResponse>
     ): Gr4vyTypedResponse<TResponse> {
-        val rawResponse = performTokenize(checkoutSessionId, cardData)
-        val parsedResponse = try {
-            @Suppress("UNCHECKED_CAST")
-            Gr4vyTokenizeResponse("success", "Tokenization completed") as TResponse
-        } catch (e: Exception) {
-            throw Gr4vyError.DecodingError("Failed to parse tokenization response: ${e.message}")
+        return try {
+            val rawResponse = performTokenize(checkoutSessionId, cardData)
+            val parsedResponse = try {
+                @Suppress("UNCHECKED_CAST")
+                Gr4vyTokenizeResponse("success", "Tokenization completed") as TResponse
+            } catch (e: Exception) {
+                throw Gr4vyError.DecodingError("Failed to parse tokenization response: ${e.message}")
+            }
+            Gr4vyTypedResponse(parsedResponse, rawResponse)
+        } finally {
+            cleanupSensitiveData(cardData)
         }
-        return Gr4vyTypedResponse(parsedResponse, rawResponse)
     }
     
 
@@ -134,6 +139,89 @@ class Gr4vyCheckoutSessionService(
             merchantId = "",
             timeout = null
         )
+    }
+    
+    /**
+     * Call the 3DS versioning endpoint to get configuration for Netcetera SDK
+     */
+    internal suspend fun callVersioning(
+        checkoutSessionId: String
+    ): com.gr4vy.sdk.responses.Gr4vyVersioningResponse {
+        return Gr4vyErrorHandler.handleAsync("CheckoutSessionService.callVersioning") {
+            val url = Gr4vyUtility.versioningURL(
+                configuration.setup, 
+                checkoutSessionId
+            ).toString()
+            
+            val data = httpClient.perform(
+                url = url,
+                method = "GET",
+                body = null,
+                merchantId = "",
+                timeout = null
+            )
+            
+            Gr4vyResponseParser.parse<com.gr4vy.sdk.responses.Gr4vyVersioningResponse>(data)
+        }
+    }
+    
+    /**
+     * Create a 3DS transaction with the authentication server
+     */
+    internal suspend fun createTransaction(
+        checkoutSessionId: String,
+        sdkAppId: String,
+        sdkEncryptedData: String,
+        sdkEphemeralPubKey: com.gr4vy.sdk.models.SdkEphemeralPubKey,
+        sdkReferenceNumber: String,
+        sdkTransactionId: String,
+        sdkMaxTimeoutMinutes: Int
+    ): com.gr4vy.sdk.responses.Gr4vyThreeDSecureResponse {
+        return Gr4vyErrorHandler.handleAsync("CheckoutSessionService.createTransaction") {
+            val url = Gr4vyUtility.createTransactionURL(
+                configuration.setup,
+                checkoutSessionId
+            ).toString()
+            
+            val sdkInterface = "03" // Both native and HTML
+            val sdkUiTypes = getSdkUiTypes(sdkInterface)
+            
+            val requestBody = com.gr4vy.sdk.requests.Gr4vyThreeDSecureAuthenticateRequest(
+                defaultSdkType = com.gr4vy.sdk.models.DefaultSdkType(
+                    wrappedInd = "Y",
+                    sdkVariant = "01"
+                ),
+                deviceChannel = "01",
+                deviceRenderOptions = com.gr4vy.sdk.models.DeviceRenderOptions(
+                    sdkInterface = sdkInterface,
+                    sdkUiType = sdkUiTypes
+                ),
+                sdkAppId = sdkAppId,
+                sdkEncryptedData = sdkEncryptedData,
+                sdkEphemeralPubKey = sdkEphemeralPubKey,
+                sdkReferenceNumber = sdkReferenceNumber,
+                sdkMaxTimeout = String.format("%02d", sdkMaxTimeoutMinutes),
+                sdkTransactionId = sdkTransactionId
+            )
+            
+            val data = httpClient.perform(
+                url = url,
+                method = "POST",
+                body = requestBody,
+                merchantId = "",
+                timeout = null
+            )
+            
+            Gr4vyResponseParser.parse<com.gr4vy.sdk.responses.Gr4vyThreeDSecureResponse>(data)
+        }
+    }
+    
+    private fun getSdkUiTypes(sdkInterface: String): List<String> {
+        return when (sdkInterface) {
+            "01" -> listOf("01", "02", "03", "04")
+            "02" -> listOf("01", "02", "03", "04", "05")
+            else -> listOf("01", "02", "03", "04", "05")
+        }
     }
     
     private fun <TRequest : Gr4vyRequest> cleanupSensitiveData(cardData: TRequest) {

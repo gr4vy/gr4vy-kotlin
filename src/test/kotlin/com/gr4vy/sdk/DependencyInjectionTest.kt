@@ -98,8 +98,8 @@ class DependencyInjectionTest {
             httpClientFactory = mockFactory
         )
         
-        // Verify the mock factory was used for all services
-        assertEquals("Factory should be called for each service", 4, mockFactory.createCallCount)
+        // Verify the mock factory was used for all services (5: options, details, methods, checkout, netcetera)
+        assertEquals("Factory should be called for each service", 5, mockFactory.createCallCount)
         
         // Verify the correct setup was passed to the factory
         val capturedSetup = mockFactory.lastSetup
