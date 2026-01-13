@@ -63,7 +63,7 @@ internal data class ACSRenderingType(
     @SerialName("acsUiTemplate")
     val acsUiTemplate: String,
     @SerialName("deviceUserInterfaceMode")
-    val deviceUserInterfaceMode: String  // "01" = text, "02" = single select, etc.
+    val deviceUserInterfaceMode: String? = null  // "01" = text, "02" = single select, etc. (optional)
 )
 
 /**

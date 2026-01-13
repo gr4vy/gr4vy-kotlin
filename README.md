@@ -68,7 +68,7 @@ Add the following to your `build.gradle.kts` (Module: app):
 
 ```kotlin
 dependencies {
-    implementation("com.gr4vy:gr4vy-kotlin:1.0.0-beta.7")
+    implementation("com.gr4vy:gr4vy-kotlin:1.0.0-beta.8")
 }
 ```
 
@@ -76,7 +76,7 @@ Or in Groovy syntax (`build.gradle`):
 
 ```groovy
 dependencies {
-    implementation 'com.gr4vy:gr4vy-kotlin:1.0.0-beta.7'
+    implementation 'com.gr4vy:gr4vy-kotlin:1.0.0-beta.8'
 }
 ```
 
@@ -88,7 +88,7 @@ Add the following to your `pom.xml`:
 <dependency>
     <groupId>com.gr4vy</groupId>
     <artifactId>gr4vy-kotlin</artifactId>
-    <version>1.0.0-beta.7</version>
+    <version>1.0.0-beta.8</version>
 </dependency>
 ```
 
