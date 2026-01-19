@@ -44,6 +44,18 @@ class Gr4vyCardDetailsResponseTest {
     }
 
     @Test
+    fun `test Gr4vyCardDetailsResponse creation with optional fields null`() {
+        val response = Gr4vyCardDetailsResponse(
+            id = "cd_optional_null"
+        )
+        
+        assertNull("Type should be null", response.type)
+        assertEquals("cd_optional_null", response.id)
+        assertNull("Card type should be null", response.cardType)
+        assertNull("Scheme should be null", response.scheme)
+    }
+
+    @Test
     fun `test Gr4vyCardDetailsResponse creation with all fields`() {
         val response = Gr4vyCardDetailsResponse(
             type = "card-details",
@@ -116,6 +128,34 @@ class Gr4vyCardDetailsResponseTest {
         assertFalse("Should not contain country", jsonString.contains("\"country\""))
     }
 
+    @Test
+    fun `test Gr4vyCardDetailsResponse serialization excludes null card_type and country`() {
+        val response = Gr4vyCardDetailsResponse(
+            type = "card-detail",
+            id = "524000",
+            cardType = null,
+            scheme = "mastercard",
+            schemeIconURL = "https://api.sandbox.agentic.gr4vy.app/assets/icons/card-schemes/mastercard.svg",
+            country = null
+        )
+        
+        val jsonString = json.encodeToString(Gr4vyCardDetailsResponse.serializer(), response)
+        
+        // Should contain non-null fields
+        assertTrue("Should contain type", jsonString.contains("\"type\""))
+        assertTrue("Should contain id", jsonString.contains("\"id\""))
+        assertTrue("Should contain scheme", jsonString.contains("\"scheme\""))
+        assertTrue("Should contain scheme_icon_url", jsonString.contains("\"scheme_icon_url\""))
+        
+        // Should NOT contain null fields 
+        assertFalse("Should not contain card_type when null", jsonString.contains("\"card_type\""))
+        assertFalse("Should not contain country when null", jsonString.contains("\"country\""))
+        
+        // Verify the JSON doesn't have null values
+        assertFalse("Should not contain null for card_type", jsonString.contains("card_type"))
+        assertFalse("Should not contain null for country", jsonString.contains("\"country\""))
+    }
+
     // MARK: - Deserialization Tests
 
     @Test
@@ -179,6 +219,126 @@ class Gr4vyCardDetailsResponseTest {
         // Should deserialize successfully despite unknown fields
     }
 
+    @Test
+    fun `test Gr4vyCardDetailsResponse deserialization with missing type field`() {
+        val jsonString = """{
+            "id": "cd_missing_type",
+            "card_type": "credit",
+            "scheme": "visa"
+        }"""
+        
+        val response = json.decodeFromString(Gr4vyCardDetailsResponse.serializer(), jsonString)
+        
+        assertNull("Type should be null when missing", response.type)
+        assertEquals("cd_missing_type", response.id)
+        assertEquals("credit", response.cardType)
+        assertEquals("visa", response.scheme)
+    }
+
+    @Test
+    fun `test Gr4vyCardDetailsResponse deserialization with null type field`() {
+        val jsonString = """{
+            "type": null,
+            "id": "cd_null_type",
+            "card_type": "credit",
+            "scheme": "visa"
+        }"""
+        
+        val response = json.decodeFromString(Gr4vyCardDetailsResponse.serializer(), jsonString)
+        
+        assertNull("Type should be null", response.type)
+        assertEquals("cd_null_type", response.id)
+    }
+
+    @Test
+    fun `test Gr4vyCardDetailsResponse deserialization with missing scheme field`() {
+        val jsonString = """{
+            "type": "card-details",
+            "id": "cd_missing_scheme",
+            "card_type": "credit"
+        }"""
+        
+        val response = json.decodeFromString(Gr4vyCardDetailsResponse.serializer(), jsonString)
+        
+        assertEquals("card-details", response.type)
+        assertEquals("cd_missing_scheme", response.id)
+        assertEquals("credit", response.cardType)
+        assertNull("Scheme should be null when missing", response.scheme)
+    }
+
+    @Test
+    fun `test Gr4vyCardDetailsResponse deserialization with null scheme field`() {
+        val jsonString = """{
+            "type": "card-details",
+            "id": "cd_null_scheme",
+            "card_type": "credit",
+            "scheme": null
+        }"""
+        
+        val response = json.decodeFromString(Gr4vyCardDetailsResponse.serializer(), jsonString)
+        
+        assertEquals("card-details", response.type)
+        assertEquals("cd_null_scheme", response.id)
+        assertNull("Scheme should be null", response.scheme)
+    }
+
+    @Test
+    fun `test Gr4vyCardDetailsResponse deserialization with missing card_type field`() {
+        val jsonString = """{
+            "type": "card-details",
+            "id": "cd_missing_card_type",
+            "scheme": "visa"
+        }"""
+        
+        val response = json.decodeFromString(Gr4vyCardDetailsResponse.serializer(), jsonString)
+        
+        assertEquals("card-details", response.type)
+        assertEquals("cd_missing_card_type", response.id)
+        assertNull("Card type should be null when missing", response.cardType)
+        assertEquals("visa", response.scheme)
+    }
+
+    @Test
+    fun `test Gr4vyCardDetailsResponse deserialization with null card_type field`() {
+        val jsonString = """{
+            "type": "card-details",
+            "id": "cd_null_card_type",
+            "card_type": null,
+            "scheme": "visa"
+        }"""
+        
+        val response = json.decodeFromString(Gr4vyCardDetailsResponse.serializer(), jsonString)
+        
+        assertEquals("card-details", response.type)
+        assertEquals("cd_null_card_type", response.id)
+        assertNull("Card type should be null", response.cardType)
+    }
+
+    @Test(expected = kotlinx.serialization.SerializationException::class)
+    fun `test Gr4vyCardDetailsResponse deserialization with null id field throws exception`() {
+        val jsonString = """{
+            "type": "card-details",
+            "id": null,
+            "card_type": "credit",
+            "scheme": "visa"
+        }"""
+        
+        // This should throw SerializationException because id is required and cannot be null
+        json.decodeFromString(Gr4vyCardDetailsResponse.serializer(), jsonString)
+    }
+
+    @Test(expected = kotlinx.serialization.SerializationException::class)
+    fun `test Gr4vyCardDetailsResponse deserialization with missing id field throws exception`() {
+        val jsonString = """{
+            "type": "card-details",
+            "card_type": "credit",
+            "scheme": "visa"
+        }"""
+        
+        // This should throw SerializationException because id is required
+        json.decodeFromString(Gr4vyCardDetailsResponse.serializer(), jsonString)
+    }
+
     // MARK: - Interface Compliance Tests
 
     @Test
@@ -211,6 +371,18 @@ class Gr4vyCardDetailsResponseTest {
         
         assertEquals("Interface type should match", "card-details", identifiableResponse.type)
         assertEquals("Interface id should match", "cd_properties_test", identifiableResponse.id)
+    }
+
+    @Test
+    fun `test interface properties handle nullable types`() {
+        val response = Gr4vyCardDetailsResponse(
+            id = "cd_nullable_test"
+        )
+        
+        val identifiableResponse: Gr4vyIdentifiableResponse = response
+        
+        assertNull("Interface type should be null", identifiableResponse.type)
+        assertEquals("Interface id should match", "cd_nullable_test", identifiableResponse.id)
     }
 
     // MARK: - Data Class Behavior Tests

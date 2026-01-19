@@ -36,11 +36,22 @@ class Gr4vyPaymentOptionTest {
         
         assertEquals("card", paymentOption.method)
         assertEquals("sandbox", paymentOption.mode)
-        assertTrue("Should be able to store payment method", paymentOption.canStorePaymentMethod)
-        assertFalse("Should not be able to delay capture", paymentOption.canDelayCapture)
-        assertEquals("payment-option", paymentOption.type) // default value
+        assertTrue("Should be able to store payment method", paymentOption.canStorePaymentMethod ?: false)
+        assertFalse("Should not be able to delay capture", paymentOption.canDelayCapture ?: true)
+        assertEquals("payment-option", paymentOption.typeOrDefault) // default value via helper
         assertNull("Icon URL should be null", paymentOption.iconUrl)
         assertNull("Label should be null", paymentOption.label)
+    }
+
+    @Test
+    fun `test Gr4vyPaymentOption creation with all optional fields null`() {
+        val paymentOption = Gr4vyPaymentOption()
+        
+        assertNull("Method should be null", paymentOption.method)
+        assertNull("Mode should be null", paymentOption.mode)
+        assertNull("Can store payment method should be null", paymentOption.canStorePaymentMethod)
+        assertNull("Can delay capture should be null", paymentOption.canDelayCapture)
+        assertEquals("payment-option", paymentOption.typeOrDefault) // Should use default
     }
 
     @Test
@@ -57,11 +68,13 @@ class Gr4vyPaymentOptionTest {
         
         assertEquals("apple_pay", paymentOption.method)
         assertEquals("production", paymentOption.mode)
-        assertFalse("Should not be able to store payment method", paymentOption.canStorePaymentMethod)
-        assertTrue("Should be able to delay capture", paymentOption.canDelayCapture)
+        assertFalse("Should not be able to store payment method", paymentOption.canStorePaymentMethod ?: true)
+        assertTrue("Should be able to delay capture", paymentOption.canDelayCapture ?: false)
         assertEquals("custom-payment-option", paymentOption.type)
+        assertEquals("custom-payment-option", paymentOption.typeOrDefault)
         assertEquals("https://example.com/icon.png", paymentOption.iconUrl)
         assertEquals("Apple Pay", paymentOption.label)
+        assertEquals("custom-payment-option", paymentOption.typeOrDefault)
     }
 
     // MARK: - Gr4vyPaymentOption Serialization Tests
@@ -139,9 +152,10 @@ class Gr4vyPaymentOptionTest {
         
         assertEquals("paypal", paymentOption.method)
         assertEquals("sandbox", paymentOption.mode)
-        assertTrue("Should be able to store payment method", paymentOption.canStorePaymentMethod)
-        assertFalse("Should not be able to delay capture", paymentOption.canDelayCapture)
+        assertTrue("Should be able to store payment method", paymentOption.canStorePaymentMethod ?: false)
+        assertFalse("Should not be able to delay capture", paymentOption.canDelayCapture ?: true)
         assertEquals("payment-option", paymentOption.type)
+        assertEquals("payment-option", paymentOption.typeOrDefault)
         assertEquals("https://example.com/paypal.png", paymentOption.iconUrl)
         assertEquals("PayPal", paymentOption.label)
     }
@@ -159,11 +173,69 @@ class Gr4vyPaymentOptionTest {
         
         assertEquals("klarna", paymentOption.method)
         assertEquals("production", paymentOption.mode)
-        assertFalse("Should not be able to store payment method", paymentOption.canStorePaymentMethod)
-        assertTrue("Should be able to delay capture", paymentOption.canDelayCapture)
-        assertEquals("payment-option", paymentOption.type) // default value
+        assertFalse("Should not be able to store payment method", paymentOption.canStorePaymentMethod ?: true)
+        assertTrue("Should be able to delay capture", paymentOption.canDelayCapture ?: false)
+        assertEquals("payment-option", paymentOption.typeOrDefault) // default value via helper
         assertNull("Icon URL should be null", paymentOption.iconUrl)
         assertNull("Label should be null", paymentOption.label)
+    }
+
+    @Test
+    fun `test Gr4vyPaymentOption deserialization with missing method field`() {
+        val jsonString = """{
+            "mode": "production",
+            "can_store_payment_method": false,
+            "can_delay_capture": true
+        }"""
+        
+        val paymentOption = json.decodeFromString(Gr4vyPaymentOption.serializer(), jsonString)
+        
+        assertNull("Method should be null when missing", paymentOption.method)
+        assertEquals("production", paymentOption.mode)
+    }
+
+    @Test
+    fun `test Gr4vyPaymentOption deserialization with missing mode field`() {
+        val jsonString = """{
+            "method": "card",
+            "can_store_payment_method": false,
+            "can_delay_capture": true
+        }"""
+        
+        val paymentOption = json.decodeFromString(Gr4vyPaymentOption.serializer(), jsonString)
+        
+        assertEquals("card", paymentOption.method)
+        assertNull("Mode should be null when missing", paymentOption.mode)
+    }
+
+    @Test
+    fun `test Gr4vyPaymentOption deserialization with missing boolean fields`() {
+        val jsonString = """{
+            "method": "card",
+            "mode": "production"
+        }"""
+        
+        val paymentOption = json.decodeFromString(Gr4vyPaymentOption.serializer(), jsonString)
+        
+        assertEquals("card", paymentOption.method)
+        assertEquals("production", paymentOption.mode)
+        assertNull("Can store payment method should be null when missing", paymentOption.canStorePaymentMethod)
+        assertNull("Can delay capture should be null when missing", paymentOption.canDelayCapture)
+    }
+
+    @Test
+    fun `test Gr4vyPaymentOption deserialization with null type field`() {
+        val jsonString = """{
+            "method": "card",
+            "mode": "production",
+            "type": null
+        }"""
+        
+        val paymentOption = json.decodeFromString(Gr4vyPaymentOption.serializer(), jsonString)
+        
+        assertEquals("card", paymentOption.method)
+        assertNull("Type should be null", paymentOption.type)
+        assertEquals("payment-option", paymentOption.typeOrDefault) // Should use default
     }
 
     // MARK: - PaymentOptionsWrapper Tests
@@ -249,12 +321,12 @@ class Gr4vyPaymentOptionTest {
         val googlePay = wrapper.items[0]
         assertEquals("google_pay", googlePay.method)
         assertEquals("Google Pay", googlePay.label)
-        assertFalse("Google Pay should not store payment method", googlePay.canStorePaymentMethod)
+        assertFalse("Google Pay should not store payment method", googlePay.canStorePaymentMethod ?: true)
         
         val paypal = wrapper.items[1]
         assertEquals("paypal", paypal.method)
         assertEquals("https://example.com/paypal.svg", paypal.iconUrl)
-        assertTrue("PayPal should store payment method", paypal.canStorePaymentMethod)
+        assertTrue("PayPal should store payment method", paypal.canStorePaymentMethod ?: false)
     }
 
     // MARK: - Data Class Behavior Tests
@@ -313,8 +385,8 @@ class Gr4vyPaymentOptionTest {
         assertEquals("Updated Label", copy2.label)
         assertEquals("card", copy2.method) // Should retain original value
         
-        assertFalse("Copy should have updated canStorePaymentMethod", copy3.canStorePaymentMethod)
-        assertTrue("Copy should have updated canDelayCapture", copy3.canDelayCapture)
+        assertFalse("Copy should have updated canStorePaymentMethod", copy3.canStorePaymentMethod ?: true)
+        assertTrue("Copy should have updated canDelayCapture", copy3.canDelayCapture ?: false)
     }
 
     // MARK: - Interface Compliance Tests
@@ -439,6 +511,104 @@ class Gr4vyPaymentOptionTest {
                         canStore, paymentOption.canStorePaymentMethod)
             assertEquals("Can delay capture should be set correctly",
                         canDelay, paymentOption.canDelayCapture)
+        }
+    }
+
+    // MARK: - Dynamic Fields Tests
+
+    @Test
+    fun `test Gr4vyRequiredFields dynamic fields support`() {
+        val jsonString = """{
+            "method": "card",
+            "context": {
+                "required_fields": {
+                    "email_address": true,
+                    "first_name": true,
+                    "custom_field_1": true,
+                    "custom_field_2": false,
+                    "another_custom": true
+                }
+            }
+        }"""
+        
+        val paymentOption = json.decodeFromString(Gr4vyPaymentOption.serializer(), jsonString)
+        
+        assertNotNull("Context should not be null", paymentOption.context)
+        paymentOption.context?.requiredFields?.let { requiredFields ->
+            assertTrue("Email address should be required", requiredFields.emailAddress ?: false)
+            assertTrue("First name should be required", requiredFields.firstName ?: false)
+            
+            // Test dynamic fields access via getField()
+            assertTrue("Custom field 1 should be captured", requiredFields.getField("custom_field_1") ?: false)
+            assertFalse("Custom field 2 should be captured", requiredFields.getField("custom_field_2") ?: true)
+            assertTrue("Another custom should be captured", requiredFields.getField("another_custom") ?: false)
+            
+            // Test subscript accessor
+            assertEquals(true, requiredFields["custom_field_1"])
+            assertEquals(false, requiredFields["custom_field_2"])
+            assertEquals(true, requiredFields["another_custom"])
+            
+            // Test that known fields still work via subscript
+            assertEquals(true, requiredFields["email_address"])
+            assertEquals(true, requiredFields["first_name"])
+        }
+    }
+
+    @Test
+    fun `test Gr4vyRequiredFields serialization preserves dynamic fields`() {
+        val jsonString = """{
+            "method": "card",
+            "context": {
+                "required_fields": {
+                    "email_address": true,
+                    "custom_dynamic_field": true
+                }
+            }
+        }"""
+        
+        val paymentOption = json.decodeFromString(Gr4vyPaymentOption.serializer(), jsonString)
+        
+        // Serialize back to JSON
+        val serialized = json.encodeToString(Gr4vyPaymentOption.serializer(), paymentOption)
+        
+        // Deserialize again to verify round-trip
+        val deserialized = json.decodeFromString(Gr4vyPaymentOption.serializer(), serialized)
+        
+        assertNotNull("Context should not be null", deserialized.context)
+        deserialized.context?.requiredFields?.let { requiredFields ->
+            assertTrue("Email address should be preserved", requiredFields.emailAddress ?: false)
+            assertTrue("Dynamic field should be preserved", requiredFields.getField("custom_dynamic_field") ?: false)
+        }
+    }
+
+    @Test
+    fun `test Gr4vyRequiredFields isEmpty property`() {
+        val emptyJson = """{
+            "method": "card",
+            "context": {
+                "required_fields": {}
+            }
+        }"""
+        
+        val paymentOption = json.decodeFromString(Gr4vyPaymentOption.serializer(), emptyJson)
+        
+        assertNotNull("Context should not be null", paymentOption.context)
+        paymentOption.context?.requiredFields?.let { requiredFields ->
+            assertTrue("Required fields should be empty", requiredFields.isEmpty)
+        }
+        
+        val withFieldsJson = """{
+            "method": "card",
+            "context": {
+                "required_fields": {
+                    "email_address": true
+                }
+            }
+        }"""
+        
+        val paymentOptionWithFields = json.decodeFromString(Gr4vyPaymentOption.serializer(), withFieldsJson)
+        paymentOptionWithFields.context?.requiredFields?.let { requiredFields ->
+            assertFalse("Required fields should not be empty", requiredFields.isEmpty)
         }
     }
 } 

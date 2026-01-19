@@ -13,6 +13,7 @@ import com.gr4vy.sdk.http.Gr4vyHttpClientProtocol
 import com.gr4vy.sdk.http.Gr4vyHttpConfiguration
 import com.gr4vy.sdk.http.Gr4vyHttpClientFactory
 import com.gr4vy.sdk.http.Gr4vyRequest
+import com.gr4vy.sdk.http.Gr4vyResponseParser
 import com.gr4vy.sdk.http.Gr4vyTypedResponse
 import com.gr4vy.sdk.models.Gr4vySetup
 import com.gr4vy.sdk.models.Gr4vyCardDetails
@@ -196,7 +197,9 @@ class Gr4vyCardDetailsServiceTest {
         assertNotNull("Result should not be null", result)
         assertNotNull("Parsed response should not be null", result.data)
         assertNotNull("Raw response should not be null", result.rawResponse)
-        assertEquals("Raw response should match", mockResponse, result.rawResponse)
+        // rawResponse is now cleaned (null fields excluded), so compare against cleaned version
+        val expectedCleanedResponse = Gr4vyResponseParser.json.encodeToString(Gr4vyCardDetailsResponse.serializer(), result.data)
+        assertEquals("Raw response should match cleaned version", expectedCleanedResponse, result.rawResponse)
         
         // Verify HTTP client was called with correct parameters
         assertEquals("Should use GET method", "GET", mockHttpClient.lastMethod)
@@ -365,7 +368,9 @@ class Gr4vyCardDetailsServiceTest {
         
         assertNotNull("Result should not be null", result)
         assertNotNull("Parsed response should not be null", result.data)
-        assertEquals("Raw response should match", mockResponse, result.rawResponse)
+        // rawResponse is now cleaned (null fields excluded), so compare against cleaned version
+        val expectedCleanedResponse = Gr4vyResponseParser.json.encodeToString(Gr4vyCardDetailsResponse.serializer(), result.data)
+        assertEquals("Raw response should match cleaned version", expectedCleanedResponse, result.rawResponse)
     }
 
     // MARK: - Convenience Methods Tests
@@ -389,7 +394,9 @@ class Gr4vyCardDetailsServiceTest {
         
         val result = service.get(testRequest)
         
-        assertEquals("Should return raw JSON", mockResponse, result.rawResponse)
+        // rawResponse is now cleaned (null fields excluded), so compare against cleaned version
+        val expectedCleanedResponse = Gr4vyResponseParser.json.encodeToString(Gr4vyCardDetailsResponse.serializer(), result.data)
+        assertEquals("Should return cleaned JSON", expectedCleanedResponse, result.rawResponse)
         
         assertEquals("Should use GET method", "GET", mockHttpClient.lastMethod)
         assertEquals("Should pass the request", testRequest, mockHttpClient.lastBody)
@@ -429,7 +436,11 @@ class Gr4vyCardDetailsServiceTest {
         
         assertNotNull("Callback result should not be null", callbackResult)
         assertTrue("Result should be success", callbackResult!!.isSuccess)
-        assertEquals("Should return raw JSON", mockResponse, callbackResult!!.getOrNull()?.rawResponse)
+        // rawResponse is now cleaned (null fields excluded), so compare against cleaned version
+        val response = callbackResult!!.getOrNull()?.data
+        assertNotNull("Response should not be null", response)
+        val expectedCleanedResponse = Gr4vyResponseParser.json.encodeToString(Gr4vyCardDetailsResponse.serializer(), response!!)
+        assertEquals("Should return cleaned JSON", expectedCleanedResponse, callbackResult!!.getOrNull()?.rawResponse)
     }
 
     // MARK: - URL Generation Tests
@@ -563,7 +574,9 @@ class Gr4vyCardDetailsServiceTest {
         val result = service.getTyped(testRequest)
         
         assertNotNull("Result should not be null", result)
-        assertEquals("Should return response", """{"id": "cd_empty_test", "type": "card-details", "card_type": "unknown", "scheme": "unknown"}""", result.rawResponse)
+        // rawResponse is now cleaned (null fields excluded), so compare against cleaned version
+        val expectedCleanedResponse = Gr4vyResponseParser.json.encodeToString(Gr4vyCardDetailsResponse.serializer(), result.data)
+        assertEquals("Should return cleaned response", expectedCleanedResponse, result.rawResponse)
     }
 
     @Test
@@ -650,7 +663,9 @@ class Gr4vyCardDetailsServiceTest {
             val result = service.getTyped(request)
             
             assertNotNull("$cardName result should not be null", result)
-            assertEquals("$cardName raw response should match", mockResponse, result.rawResponse)
+            // rawResponse is now cleaned (null fields excluded), so compare against cleaned version
+            val expectedCleanedResponse = Gr4vyResponseParser.json.encodeToString(Gr4vyCardDetailsResponse.serializer(), result.data)
+            assertEquals("$cardName raw response should match cleaned version", expectedCleanedResponse, result.rawResponse)
             
             mockHttpClient.reset()
         }
@@ -678,7 +693,9 @@ class Gr4vyCardDetailsServiceTest {
         
         assertNotNull("Result should not be null", result)
         assertEquals("Should pass the request with BIN", requestWithBin, mockHttpClient.lastBody)
-        assertEquals("Raw response should match", mockResponse, result.rawResponse)
+        // rawResponse is now cleaned (null fields excluded), so compare against cleaned version
+        val expectedCleanedResponse = Gr4vyResponseParser.json.encodeToString(Gr4vyCardDetailsResponse.serializer(), result.data)
+        assertEquals("Raw response should match cleaned version", expectedCleanedResponse, result.rawResponse)
     }
 
     // MARK: - Concurrent Request Tests
@@ -712,7 +729,9 @@ class Gr4vyCardDetailsServiceTest {
         // Verify all requests succeeded
         results.forEach { result ->
             assertNotNull("All results should be non-null", result)
-            assertEquals("All results should have same raw response", mockResponse, result.rawResponse)
+            // rawResponse is now cleaned (null fields excluded), so compare against cleaned version
+            val expectedCleanedResponse = Gr4vyResponseParser.json.encodeToString(Gr4vyCardDetailsResponse.serializer(), result.data)
+            assertEquals("All results should have cleaned response", expectedCleanedResponse, result.rawResponse)
         }
         
         // The last request should be the one recorded in mock
@@ -775,7 +794,9 @@ class Gr4vyCardDetailsServiceTest {
         
         // Verify results
         assertNotNull("Result should not be null", result)
-        assertEquals("Should return realistic response", realisticResponse, result.rawResponse)
+        // rawResponse is now cleaned (null fields excluded), so compare against cleaned version
+        val expectedCleanedResponse = Gr4vyResponseParser.json.encodeToString(Gr4vyCardDetailsResponse.serializer(), result.data)
+        assertEquals("Should return cleaned realistic response", expectedCleanedResponse, result.rawResponse)
         
         // Verify HTTP client was called with correct parameters
         assertTrue("URL should contain production company ID", mockHttpClient.lastUrl.contains("integration-test-company"))

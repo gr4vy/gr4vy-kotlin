@@ -11,14 +11,21 @@ data class PaymentOptionsWrapper(
 
 @Serializable
 data class Gr4vyPaymentOption(
-    val method: String,
-    val mode: String,
+    val method: String? = null,
+    val mode: String? = null,
     @SerialName("can_store_payment_method")
-    val canStorePaymentMethod: Boolean,
+    val canStorePaymentMethod: Boolean? = null,
     @SerialName("can_delay_capture")
-    val canDelayCapture: Boolean,
-    val type: String = "payment-option",
+    val canDelayCapture: Boolean? = null,
+    val type: String? = null,
     @SerialName("icon_url")
     val iconUrl: String? = null,
-    val label: String? = null
-) : Gr4vyResponse 
+    val label: String? = null,
+    val context: Gr4vyPaymentOptionContext? = null
+) : Gr4vyResponse {
+    /**
+     * Returns the type, defaulting to "payment-option" if null or missing
+     */
+    val typeOrDefault: String
+        get() = type ?: "payment-option"
+} 

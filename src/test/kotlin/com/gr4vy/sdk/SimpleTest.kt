@@ -13,7 +13,7 @@ import org.junit.Test
 class SimpleTest {
     @Test
     fun `test version`() {
-        assertEquals("1.0.0", Version.current)
+        assertEquals("1.0.1", Version.current)
     }
 
     @Test

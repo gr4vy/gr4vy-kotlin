@@ -12,7 +12,7 @@ data class Gr4vyBuyersPaymentMethodsResponse(
 
 @Serializable
 data class Gr4vyBuyersPaymentMethod(
-    override val type: String,
+    override val type: String? = null,
     @SerialName("approval_url")
     val approvalURL: String? = null,
     val country: String? = null,
@@ -26,7 +26,7 @@ data class Gr4vyBuyersPaymentMethod(
     val method: String? = null,
     val mode: String? = null,
     val scheme: String? = null,
-    override val id: String,
+    override val id: String? = null,
     @SerialName("merchant_account_id")
     val merchantAccountId: String? = null,
     @SerialName("additional_schemes")

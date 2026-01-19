@@ -47,6 +47,15 @@ class Gr4vyBuyersPaymentMethodsResponseTest {
     }
 
     @Test
+    fun `test Gr4vyBuyersPaymentMethod creation with all optional fields null`() {
+        val paymentMethod = Gr4vyBuyersPaymentMethod()
+        
+        assertNull("Type should be null", paymentMethod.type)
+        assertNull("ID should be null", paymentMethod.id)
+        assertNull("Approval URL should be null", paymentMethod.approvalURL)
+    }
+
+    @Test
     fun `test Gr4vyBuyersPaymentMethod creation with all fields`() {
         val paymentMethod = Gr4vyBuyersPaymentMethod(
             type = "payment-method",
@@ -583,5 +592,73 @@ class Gr4vyBuyersPaymentMethodsResponseTest {
         assertEquals("card", paymentMethod.method)
         assertEquals("visa", paymentMethod.scheme)
         // Should deserialize successfully despite unknown fields
+    }
+
+    @Test
+    fun `test Gr4vyBuyersPaymentMethod deserialization with missing type field`() {
+        val jsonString = """{
+            "id": "pm_missing_type",
+            "method": "card",
+            "scheme": "visa"
+        }"""
+        
+        val paymentMethod = json.decodeFromString(Gr4vyBuyersPaymentMethod.serializer(), jsonString)
+        
+        assertNull("Type should be null when missing", paymentMethod.type)
+        assertEquals("pm_missing_type", paymentMethod.id)
+        assertEquals("card", paymentMethod.method)
+    }
+
+    @Test
+    fun `test Gr4vyBuyersPaymentMethod deserialization with null type field`() {
+        val jsonString = """{
+            "type": null,
+            "id": "pm_null_type",
+            "method": "card"
+        }"""
+        
+        val paymentMethod = json.decodeFromString(Gr4vyBuyersPaymentMethod.serializer(), jsonString)
+        
+        assertNull("Type should be null", paymentMethod.type)
+        assertEquals("pm_null_type", paymentMethod.id)
+    }
+
+    @Test
+    fun `test Gr4vyBuyersPaymentMethod deserialization with missing id field`() {
+        val jsonString = """{
+            "type": "payment-method",
+            "method": "card",
+            "scheme": "visa"
+        }"""
+        
+        val paymentMethod = json.decodeFromString(Gr4vyBuyersPaymentMethod.serializer(), jsonString)
+        
+        assertEquals("payment-method", paymentMethod.type)
+        assertNull("ID should be null when missing", paymentMethod.id)
+        assertEquals("card", paymentMethod.method)
+    }
+
+    @Test
+    fun `test Gr4vyBuyersPaymentMethod deserialization with null id field`() {
+        val jsonString = """{
+            "type": "payment-method",
+            "id": null,
+            "method": "card"
+        }"""
+        
+        val paymentMethod = json.decodeFromString(Gr4vyBuyersPaymentMethod.serializer(), jsonString)
+        
+        assertEquals("payment-method", paymentMethod.type)
+        assertNull("ID should be null", paymentMethod.id)
+    }
+
+    @Test
+    fun `test Gr4vyBuyersPaymentMethod interface handles nullable types`() {
+        val paymentMethod = Gr4vyBuyersPaymentMethod()
+        
+        val identifiableResponse: Gr4vyIdentifiableResponse = paymentMethod
+        
+        assertNull("Interface type should be null", identifiableResponse.type)
+        assertNull("Interface id should be null", identifiableResponse.id)
     }
 } 

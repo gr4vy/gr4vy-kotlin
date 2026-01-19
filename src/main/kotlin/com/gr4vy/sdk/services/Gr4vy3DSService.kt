@@ -434,10 +434,22 @@ internal class Gr4vy3DSService(
     ): ChallengeResult = suspendCancellableCoroutine { continuation ->
         
         val challengeParameters = ChallengeParameters()
-        challengeParameters.set3DSServerTransactionID(challenge.serverTransactionId)
-        challengeParameters.setAcsTransactionID(challenge.acsTransactionId)
-        challengeParameters.setAcsRefNumber(challenge.acsReferenceNumber)
-        challengeParameters.setAcsSignedContent(challenge.acsSignedContent)
+        // Handle nullable fields - these should typically be present for CHALLENGE indicator
+        challenge.serverTransactionId?.let {
+            challengeParameters.set3DSServerTransactionID(it)
+        } ?: Gr4vyLogger.warn("Challenge serverTransactionId is null")
+        
+        challenge.acsTransactionId?.let {
+            challengeParameters.setAcsTransactionID(it)
+        } ?: Gr4vyLogger.warn("Challenge acsTransactionId is null")
+        
+        challenge.acsReferenceNumber?.let {
+            challengeParameters.setAcsRefNumber(it)
+        } ?: Gr4vyLogger.warn("Challenge acsReferenceNumber is null")
+        
+        challenge.acsSignedContent?.let {
+            challengeParameters.setAcsSignedContent(it)
+        } ?: Gr4vyLogger.warn("Challenge acsSignedContent is null")
         
         val challengeCompleted = AtomicBoolean(false)
         

@@ -139,44 +139,6 @@ class Gr4vyPaymentOptionsServiceTest {
     }
     
     @Test
-    fun testGetRequestQueryParameterConversion() {
-        // Test that the new GET request handling converts body to query parameters
-        println("\n=== GET Request Query Parameter Conversion ===")
-        println("Now iOS and Android will behave the same for GET requests!")
-        println("")
-        
-        val cardDetails = Gr4vyCardDetails(
-            currency = "USD",
-            bin = "42424242"
-        )
-        
-        val cardRequest = Gr4vyCardDetailsRequest(
-            cardDetails = cardDetails
-        )
-        
-        val json = Json {
-            ignoreUnknownKeys = true
-            encodeDefaults = false
-            explicitNulls = false
-        }
-        
-        val serialized = json.encodeToString(cardRequest)
-        println("Card details request JSON: $serialized")
-        println("")
-        println("Before v1.0.0-beta.4 (Android):")
-        println("   GET https://api.sandbox.partners.gr4vy.app/card-details")
-        println("   (No query parameters - request failed!)")
-        println("")
-        println("iOS behavior (always worked):")
-        println("   GET https://api.sandbox.partners.gr4vy.app/card-details?currency=USD&bin=42424242")
-        println("")
-        println("After v1.0.0-beta.5 (Android - FIXED!):")
-        println("   GET https://api.sandbox.partners.gr4vy.app/card-details?currency=USD&bin=42424242")
-        println("")
-        println("✅ GET requests now work correctly on Android!")
-    }
-    
-    @Test
     fun testDebugOutputExample() {
         // This test shows what the enhanced debug output will look like
         println("\n=== Enhanced Debug Output Example ===")

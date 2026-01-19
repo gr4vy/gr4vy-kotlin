@@ -8,10 +8,10 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 internal data class SdkEphemeralPubKey(
-    val y: String,
-    val x: String,
-    val kty: String,   // "EC" for elliptic curve
-    val crv: String    // "P-256"
+    val y: String? = null,
+    val x: String? = null,
+    val kty: String? = null,   // "EC" for elliptic curve
+    val crv: String? = null    // "P-256"
 )
 
 /**
@@ -20,9 +20,9 @@ internal data class SdkEphemeralPubKey(
 @Serializable
 internal data class DefaultSdkType(
     @SerialName("wrappedInd")
-    val wrappedInd: String,  // "Y" = wrapped
+    val wrappedInd: String? = null,  // "Y" = wrapped
     @SerialName("sdkVariant")
-    val sdkVariant: String   // "01"
+    val sdkVariant: String? = null   // "01"
 )
 
 /**
@@ -31,9 +31,9 @@ internal data class DefaultSdkType(
 @Serializable
 internal data class DeviceRenderOptions(
     @SerialName("sdkInterface")
-    val sdkInterface: String,  // "03" = both native and HTML
+    val sdkInterface: String? = null,  // "03" = both native and HTML
     @SerialName("sdkUiType")
-    val sdkUiType: List<String>  // ["01", "02", "03", "04", "05"]
+    val sdkUiType: List<String>? = null  // ["01", "02", "03", "04", "05"]
 )
 
 /**
@@ -42,15 +42,15 @@ internal data class DeviceRenderOptions(
 @Serializable
 internal data class Gr4vyChallengeResponse(
     @SerialName("server_transaction_id")
-    val serverTransactionId: String,
+    val serverTransactionId: String? = null,
     @SerialName("acs_transaction_id")
-    val acsTransactionId: String,
+    val acsTransactionId: String? = null,
     @SerialName("acs_reference_number")
-    val acsReferenceNumber: String,
+    val acsReferenceNumber: String? = null,
     @SerialName("acs_rendering_type")
-    val acsRenderingType: ACSRenderingType,
+    val acsRenderingType: ACSRenderingType? = null,
     @SerialName("acs_signed_content")
-    val acsSignedContent: String
+    val acsSignedContent: String? = null
 )
 
 /**
@@ -59,9 +59,9 @@ internal data class Gr4vyChallengeResponse(
 @Serializable
 internal data class ACSRenderingType(
     @SerialName("acsInterface")
-    val acsInterface: String,  // "01" = native, "02" = HTML
+    val acsInterface: String? = null,  // "01" = native, "02" = HTML
     @SerialName("acsUiTemplate")
-    val acsUiTemplate: String,
+    val acsUiTemplate: String? = null,
     @SerialName("deviceUserInterfaceMode")
     val deviceUserInterfaceMode: String? = null  // "01" = text, "02" = single select, etc. (optional)
 )

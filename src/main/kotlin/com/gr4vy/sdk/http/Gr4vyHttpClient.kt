@@ -290,7 +290,7 @@ class Gr4vyHttpClient(
             requestBuilder.addHeader("Authorization", "Bearer $token")
         }
         
-        // Add merchant ID header if provided - using the same header name as iOS
+        // Add merchant ID header if provided
         if (merchantId.isNotEmpty()) {
             requestBuilder.addHeader("x-gr4vy-merchant-account-id", merchantId)
         } else if (configuration.setup.merchantId != null) {
@@ -300,7 +300,7 @@ class Gr4vyHttpClient(
         // Set request method and body
         when (method.uppercase()) {
             "GET" -> {
-                // For GET requests, convert body to query parameters (like iOS does)
+                // For GET requests, convert body to query parameters
                 // Note: buildUrlWithQueryParams will sanitize the URL again, but that's safe
                 val urlWithParams = buildUrlWithQueryParams(sanitizedUrl, body)
                 requestBuilder.url(urlWithParams).get()

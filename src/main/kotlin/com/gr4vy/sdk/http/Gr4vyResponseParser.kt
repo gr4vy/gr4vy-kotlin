@@ -12,6 +12,7 @@ object Gr4vyResponseParser {
         coerceInputValues = true
         isLenient = true
         encodeDefaults = false
+        explicitNulls = false 
     }
     
     fun <TResponse : Gr4vyResponse> parseResponse(

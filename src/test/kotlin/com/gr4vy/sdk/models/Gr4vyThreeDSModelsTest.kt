@@ -56,6 +56,51 @@ class Gr4vyThreeDSModelsTest {
     }
 
     @Test
+    fun `test ACSRenderingType decoding with missing acsInterface`() = runTest {
+        val json = """
+        {
+            "acsUiTemplate": "04"
+        }
+        """.trimIndent()
+        
+        val acsRenderingType = Gr4vyResponseParser.json.decodeFromString(ACSRenderingType.serializer(), json)
+        
+        assertNull("acsInterface should be null when missing", acsRenderingType.acsInterface)
+        assertEquals("04", acsRenderingType.acsUiTemplate)
+    }
+
+    @Test
+    fun `test ACSRenderingType decoding with missing acsUiTemplate`() = runTest {
+        val json = """
+        {
+            "acsInterface": "01"
+        }
+        """.trimIndent()
+        
+        val acsRenderingType = Gr4vyResponseParser.json.decodeFromString(ACSRenderingType.serializer(), json)
+        
+        assertEquals("01", acsRenderingType.acsInterface)
+        assertNull("acsUiTemplate should be null when missing", acsRenderingType.acsUiTemplate)
+    }
+
+    @Test
+    fun `test ACSRenderingType decoding with null values`() = runTest {
+        val json = """
+        {
+            "acsInterface": null,
+            "acsUiTemplate": null,
+            "deviceUserInterfaceMode": null
+        }
+        """.trimIndent()
+        
+        val acsRenderingType = Gr4vyResponseParser.json.decodeFromString(ACSRenderingType.serializer(), json)
+        
+        assertNull("acsInterface should be null", acsRenderingType.acsInterface)
+        assertNull("acsUiTemplate should be null", acsRenderingType.acsUiTemplate)
+        assertNull("deviceUserInterfaceMode should be null", acsRenderingType.deviceUserInterfaceMode)
+    }
+
+    @Test
     fun `test ACSRenderingType decoding with null deviceUserInterfaceMode`() = runTest {
         val json = """
         {
@@ -95,9 +140,12 @@ class Gr4vyThreeDSModelsTest {
         assertEquals("dbc51a89-48d9-2324-82cf-89263d2710a1", challenge.serverTransactionId)
         assertEquals("99caa473-57db-1212-9ecc-02078ee5007c", challenge.acsTransactionId)
         assertEquals("XXX", challenge.acsReferenceNumber)
-        assertEquals("01", challenge.acsRenderingType.acsInterface)
-        assertEquals("04", challenge.acsRenderingType.acsUiTemplate)
-        assertEquals("01", challenge.acsRenderingType.deviceUserInterfaceMode)
+        assertNotNull("ACS rendering type should not be null", challenge.acsRenderingType)
+        challenge.acsRenderingType?.let { acsRenderingType ->
+            assertEquals("01", acsRenderingType.acsInterface)
+            assertEquals("04", acsRenderingType.acsUiTemplate)
+            assertEquals("01", acsRenderingType.deviceUserInterfaceMode)
+        }
         assertEquals("XXX.XXXXXX", challenge.acsSignedContent)
     }
 
@@ -121,9 +169,12 @@ class Gr4vyThreeDSModelsTest {
         assertEquals("dbc51a89-48d9-2324-82cf-89263d2710a1", challenge.serverTransactionId)
         assertEquals("99caa473-57db-1212-9ecc-02078ee5007c", challenge.acsTransactionId)
         assertEquals("XXX", challenge.acsReferenceNumber)
-        assertEquals("01", challenge.acsRenderingType.acsInterface)
-        assertEquals("04", challenge.acsRenderingType.acsUiTemplate)
-        assertNull("deviceUserInterfaceMode should be null when missing", challenge.acsRenderingType.deviceUserInterfaceMode)
+        assertNotNull("ACS rendering type should not be null", challenge.acsRenderingType)
+        challenge.acsRenderingType?.let { acsRenderingType ->
+            assertEquals("01", acsRenderingType.acsInterface)
+            assertEquals("04", acsRenderingType.acsUiTemplate)
+            assertNull("deviceUserInterfaceMode should be null when missing", acsRenderingType.deviceUserInterfaceMode)
+        }
         assertEquals("XXX.XXXXXX", challenge.acsSignedContent)
     }
 
@@ -164,9 +215,12 @@ class Gr4vyThreeDSModelsTest {
             assertEquals("dbc51a89-48d9-2324-82cf-89263d2710a1", challenge.serverTransactionId)
             assertEquals("99caa473-57db-1212-9ecc-02078ee5007c", challenge.acsTransactionId)
             assertEquals("XXX", challenge.acsReferenceNumber)
-            assertEquals("01", challenge.acsRenderingType.acsInterface)
-            assertEquals("04", challenge.acsRenderingType.acsUiTemplate)
-            assertEquals("01", challenge.acsRenderingType.deviceUserInterfaceMode)
+            assertNotNull("ACS rendering type should not be null", challenge.acsRenderingType)
+            challenge.acsRenderingType?.let { acsRenderingType ->
+                assertEquals("01", acsRenderingType.acsInterface)
+                assertEquals("04", acsRenderingType.acsUiTemplate)
+                assertEquals("01", acsRenderingType.deviceUserInterfaceMode)
+            }
             assertEquals("XXX.XXXXXX", challenge.acsSignedContent)
         } ?: fail("Challenge should not be null")
     }
@@ -205,9 +259,12 @@ class Gr4vyThreeDSModelsTest {
             assertEquals("dbc51a89-48d9-2324-82cf-89263d2710a1", challenge.serverTransactionId)
             assertEquals("99caa473-57db-1212-9ecc-02078ee5007c", challenge.acsTransactionId)
             assertEquals("XXX", challenge.acsReferenceNumber)
-            assertEquals("01", challenge.acsRenderingType.acsInterface)
-            assertEquals("04", challenge.acsRenderingType.acsUiTemplate)
-            assertNull("deviceUserInterfaceMode should be null when missing", challenge.acsRenderingType.deviceUserInterfaceMode)
+            assertNotNull("ACS rendering type should not be null", challenge.acsRenderingType)
+            challenge.acsRenderingType?.let { acsRenderingType ->
+                assertEquals("01", acsRenderingType.acsInterface)
+                assertEquals("04", acsRenderingType.acsUiTemplate)
+                assertNull("deviceUserInterfaceMode should be null when missing", acsRenderingType.deviceUserInterfaceMode)
+            }
             assertEquals("XXX.XXXXXX", challenge.acsSignedContent)
         } ?: fail("Challenge should not be null")
     }
@@ -282,5 +339,44 @@ class Gr4vyThreeDSModelsTest {
         assertNotNull("Challenge should not be null", response.challenge)
         assertEquals("02", response.challenge?.acsRenderingType?.deviceUserInterfaceMode)
     }
+
+    @Test
+    fun `test Gr4vyChallengeResponse decoding with missing fields`() = runTest {
+        val json = """
+        {
+            "server_transaction_id": "test-server-id"
+        }
+        """.trimIndent()
+        
+        val challenge = Gr4vyResponseParser.json.decodeFromString(Gr4vyChallengeResponse.serializer(), json)
+        
+        assertEquals("test-server-id", challenge.serverTransactionId)
+        assertNull("ACS transaction ID should be null when missing", challenge.acsTransactionId)
+        assertNull("ACS reference number should be null when missing", challenge.acsReferenceNumber)
+        assertNull("ACS rendering type should be null when missing", challenge.acsRenderingType)
+        assertNull("ACS signed content should be null when missing", challenge.acsSignedContent)
+    }
+
+    @Test
+    fun `test Gr4vyChallengeResponse decoding with null values`() = runTest {
+        val json = """
+        {
+            "server_transaction_id": null,
+            "acs_transaction_id": null,
+            "acs_reference_number": null,
+            "acs_rendering_type": null,
+            "acs_signed_content": null
+        }
+        """.trimIndent()
+        
+        val challenge = Gr4vyResponseParser.json.decodeFromString(Gr4vyChallengeResponse.serializer(), json)
+        
+        assertNull("Server transaction ID should be null", challenge.serverTransactionId)
+        assertNull("ACS transaction ID should be null", challenge.acsTransactionId)
+        assertNull("ACS reference number should be null", challenge.acsReferenceNumber)
+        assertNull("ACS rendering type should be null", challenge.acsRenderingType)
+        assertNull("ACS signed content should be null", challenge.acsSignedContent)
+    }
 }
+
 

@@ -15,6 +15,7 @@ import com.gr4vy.sdk.utils.Gr4vyErrorHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
 
 class Gr4vyCardDetailsService(
     private var httpClient: Gr4vyHttpClientProtocol,
@@ -44,9 +45,11 @@ class Gr4vyCardDetailsService(
     
     suspend fun <TRequest : Gr4vyRequest> getTyped(request: TRequest): Gr4vyTypedResponse<Gr4vyCardDetailsResponse> {
         return Gr4vyErrorHandler.handleAsync("CardDetailsService.getTyped") {
-            val rawResponse = fetch(request)
-            val parsedResponse = Gr4vyResponseParser.parse<Gr4vyCardDetailsResponse>(rawResponse)
-            Gr4vyTypedResponse(parsedResponse, rawResponse)
+            val apiResponse = fetch(request)
+            val parsedResponse = Gr4vyResponseParser.parse<Gr4vyCardDetailsResponse>(apiResponse)
+            // Re-serialize to get cleaned JSON without null fields 
+            val cleanedResponse = Gr4vyResponseParser.json.encodeToString(Gr4vyCardDetailsResponse.serializer(), parsedResponse)
+            Gr4vyTypedResponse(parsedResponse, cleanedResponse)
         }
     }
     
@@ -65,10 +68,13 @@ class Gr4vyCardDetailsService(
         request: TRequest,
         responseClass: Class<TResponse>
     ): Gr4vyTypedResponse<TResponse> {
-        val rawResponse = fetch(request)
+        val apiResponse = fetch(request)
         @Suppress("UNCHECKED_CAST")
-        val parsedResponse = Gr4vyResponseParser.parse<Gr4vyCardDetailsResponse>(rawResponse) as TResponse
-        return Gr4vyTypedResponse(parsedResponse, rawResponse)
+        val parsedResponse = Gr4vyResponseParser.parse<Gr4vyCardDetailsResponse>(apiResponse) as TResponse
+        // Re-serialize to get cleaned JSON without null fields 
+        // Note: For generic TResponse, we serialize as Gr4vyCardDetailsResponse since that's what we parsed
+        val cleanedResponse = Gr4vyResponseParser.json.encodeToString(Gr4vyCardDetailsResponse.serializer(), parsedResponse as Gr4vyCardDetailsResponse)
+        return Gr4vyTypedResponse(parsedResponse, cleanedResponse)
     }
     
 

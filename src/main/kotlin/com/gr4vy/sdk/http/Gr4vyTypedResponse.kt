@@ -3,6 +3,16 @@ package com.gr4vy.sdk.http
 data class Gr4vyTypedResponse<out TResponse : Gr4vyResponse>(
     val data: TResponse,
     
+    /**
+     * Raw JSON response from the API (may include null fields).
+     * To get a cleaned JSON string that excludes null fields,
+     * serialize the [data] field using Gr4vyResponseParser.json instead of using this rawResponse.
+     * 
+     * Example:
+     * ```kotlin
+     * val cleanedJson = Gr4vyResponseParser.json.encodeToString(response.data)
+     * ```
+     */
     val rawResponse: String
 ) {
     val isIdentifiable: Boolean

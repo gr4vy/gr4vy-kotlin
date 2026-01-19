@@ -26,6 +26,7 @@ import com.gr4vy.sdk.services.Gr4vyCheckoutSessionService
 import com.gr4vy.sdk.services.Gr4vyTokenizeResponse
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.*
 import org.junit.Assert.*
 import org.junit.Test
 import org.robolectric.annotation.Config
@@ -210,7 +211,11 @@ class ResponseTypeSafetyTest {
         
         assertNotNull("Should have typed response", result)
         assertTrue("Should have Gr4vyCardDetailsResponse data", result.data is Gr4vyCardDetailsResponse)
-        assertEquals("Should have raw response", cardDetailsJson, result.rawResponse)
+        // rawResponse is now cleaned (null fields excluded), so compare parsed JSON objects to ignore field order
+        val expectedCleanedResponse = Gr4vyResponseParser.json.encodeToString(Gr4vyCardDetailsResponse.serializer(), result.data)
+        val expectedJson = Json.parseToJsonElement(expectedCleanedResponse)
+        val actualJson = Json.parseToJsonElement(result.rawResponse)
+        assertEquals("Should have cleaned raw response", expectedJson, actualJson)
         assertTrue("Should be identifiable", result.isIdentifiable)
         assertEquals("card_details", result.responseType)
         assertEquals("card-123", result.responseId)

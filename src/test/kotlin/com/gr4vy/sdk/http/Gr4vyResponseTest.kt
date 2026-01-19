@@ -151,9 +151,14 @@ class Gr4vyResponseTest {
         
         responses.forEachIndexed { index, response ->
             assertTrue("Response $index should be identifiable", response is Gr4vyIdentifiableResponse)
-            assertFalse("Response $index type should not be empty", response.type.isEmpty())
-            assertFalse("Response $index id should not be empty", response.id.isEmpty())
-            assertTrue("Response $index id should have reasonable length", response.id.length >= 3)
+            // Type and id are now nullable, so check if they're not null before checking isEmpty
+            response.type?.let {
+                assertFalse("Response $index type should not be empty", it.isEmpty())
+            }
+            response.id?.let {
+                assertFalse("Response $index id should not be empty", it.isEmpty())
+                assertTrue("Response $index id should have reasonable length", it.length >= 3)
+            }
         }
     }
 } 

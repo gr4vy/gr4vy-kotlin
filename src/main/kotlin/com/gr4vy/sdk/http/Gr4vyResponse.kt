@@ -10,7 +10,7 @@ package com.gr4vy.sdk.http
 interface Gr4vyResponse
 
 interface Gr4vyIdentifiableResponse : Gr4vyResponse {
-    val type: String
+    val type: String?
     
-    val id: String
+    val id: String?
 } 
