@@ -372,8 +372,8 @@ gr4vy.tokenize(
 ### Tokenize stored payment method
 
 ```kotlin
-// Use a stored payment method ID (optionally include CVV)
-val storedCardData = Gr4vyCheckoutSessionRequest(
+// Rename variable to better reflect its purpose
+val storedPaymentMethodRequest = Gr4vyCheckoutSessionRequest(
     paymentMethod = Gr4vyPaymentMethod.Id(
         id = "b7e3a2c2-1f4b-4e8a-9c2d-2e7e2b8e9c2d", // stored payment method id (UUID)
         securityCode = "123" // optional
@@ -385,7 +385,7 @@ lifecycleScope.launch {
     try {
         gr4vy.tokenize(
             checkoutSessionId = "session_123",
-            cardData = storedCardData
+            cardData = storedPaymentMethodRequest
         )
         println("Stored payment method tokenization complete")
     } catch (error: Gr4vyError) {
@@ -396,7 +396,7 @@ lifecycleScope.launch {
 // Callback version
 gr4vy.tokenize(
     checkoutSessionId = "session_123",
-    cardData = storedCardData
+    cardData = storedPaymentMethodRequest
 ) { result ->
     when {
         result.isSuccess -> println("Stored payment method tokenization complete")
