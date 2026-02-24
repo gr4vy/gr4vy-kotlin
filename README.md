@@ -371,6 +371,7 @@ gr4vy.tokenize(
 
 ### Tokenize stored payment method
 
+Tokenizes a previously stored payment method using its ID. The security code (CVV) can optionally be provided for additional verification.
 ```kotlin
 // Rename variable to better reflect its purpose
 val storedPaymentMethodRequest = Gr4vyCheckoutSessionRequest(
