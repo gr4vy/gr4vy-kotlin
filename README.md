@@ -383,11 +383,11 @@ val storedPaymentMethodRequest = Gr4vyCheckoutSessionRequest(
 // Tokenize stored payment method (suspend function)
 lifecycleScope.launch {
     try {
-        gr4vy.tokenize(
+        val response = gr4vy.tokenize(
             checkoutSessionId = "session_123",
             cardData = storedPaymentMethodRequest
         )
-        println("Stored payment method tokenization complete")
+        println("Stored payment method tokenization complete: tokenized=${response.tokenized}")
     } catch (error: Gr4vyError) {
         println("Error tokenizing stored payment method: $error")
     }
