@@ -368,6 +368,42 @@ gr4vy.tokenize(
 - `tokenized`: Boolean indicating if tokenization was successful
 - `authentication`: Optional `Gr4vyAuthentication` object with authentication details
 
+### Tokenize stored payment method
+
+```kotlin
+// Use a stored payment method ID (optionally include CVV)
+val storedCardData = Gr4vyCardData(
+    paymentMethod = Gr4vyPaymentMethod.Id(
+        id = "b7e3a2c2-1f4b-4e8a-9c2d-2e7e2b8e9c2d", // stored payment method id (UUID)
+        securityCode = "123" // optional
+    )
+)
+
+// Tokenize stored payment method (suspend function)
+lifecycleScope.launch {
+    try {
+        gr4vy.tokenize(
+            checkoutSessionId = "session_123",
+            cardData = storedCardData
+        )
+        println("Stored payment method tokenization complete")
+    } catch (error: Gr4vyError) {
+        println("Error tokenizing stored payment method: $error")
+    }
+}
+
+// Callback version
+gr4vy.tokenize(
+    checkoutSessionId = "session_123",
+    cardData = storedCardData
+) { result ->
+    when {
+        result.isSuccess -> println("Stored payment method tokenization complete")
+        result.isFailure -> println("Error tokenizing stored payment method: ${result.exceptionOrNull()}")
+    }
+}
+```
+
 ### List available payment options
 
 List the available payment options that can be presented at checkout.
@@ -799,4 +835,4 @@ cardData.dispose()
 
 ## License
 
-This project is provided as-is under the [LICENSE](LICENSE). 
+This project is provided as-is under the [LICENSE](LICENSE).
