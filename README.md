@@ -30,8 +30,9 @@ A [Kotlin client app](https://github.com/gr4vy/gr4vy-kotlin-client-app) that use
   - [Per-Request Timeout](#per-request-timeout)
   - [Default Timeout Values](#default-timeout-values)
 - [Available Operations](#available-operations)
-  - [Tokenize card details](#vault-card-details)
-  - [Tokenize card details with 3D Secure authentication](#vault-card-details-with-3d-secure-authentication)
+  - [Tokenize card details](#tokenize-card-details)
+  - [Tokenize card details with 3D Secure authentication](#tokenize-card-details-with-3d-secure-authentication)
+  - [Tokenize stored payment method](#tokenize-stored-payment-method)
   - [List available payment options](#list-available-payment-options)
   - [Get card details](#get-card-details)
   - [List buyer's payment methods](#list-buyers-payment-methods)
@@ -367,6 +368,43 @@ gr4vy.tokenize(
 **Returns:** `Gr4vyTokenizeResult` containing:
 - `tokenized`: Boolean indicating if tokenization was successful
 - `authentication`: Optional `Gr4vyAuthentication` object with authentication details
+
+### Tokenize stored payment method
+
+Tokenizes a previously stored payment method using its ID. The security code (CVV) can optionally be provided for additional verification.
+```kotlin
+// Rename variable to better reflect its purpose
+val storedPaymentMethodRequest = Gr4vyCheckoutSessionRequest(
+    paymentMethod = Gr4vyPaymentMethod.Id(
+        id = "b7e3a2c2-1f4b-4e8a-9c2d-2e7e2b8e9c2d", // stored payment method id (UUID)
+        securityCode = "123" // optional
+    )
+)
+
+// Tokenize stored payment method (suspend function)
+lifecycleScope.launch {
+    try {
+        val response = gr4vy.tokenize(
+            checkoutSessionId = "session_123",
+            cardData = storedPaymentMethodRequest
+        )
+        println("Stored payment method tokenization complete: tokenized=${response.tokenized}")
+    } catch (error: Gr4vyError) {
+        println("Error tokenizing stored payment method: $error")
+    }
+}
+
+// Callback version
+gr4vy.tokenize(
+    checkoutSessionId = "session_123",
+    cardData = storedPaymentMethodRequest
+) { result ->
+    when {
+        result.isSuccess -> println("Stored payment method tokenization complete")
+        result.isFailure -> println("Error tokenizing stored payment method: ${result.exceptionOrNull()}")
+    }
+}
+```
 
 ### List available payment options
 
@@ -799,4 +837,4 @@ cardData.dispose()
 
 ## License
 
-This project is provided as-is under the [LICENSE](LICENSE). 
+This project is provided as-is under the [LICENSE](LICENSE).
