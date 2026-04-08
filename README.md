@@ -369,6 +369,21 @@ gr4vy.tokenize(
 - `tokenized`: Boolean indicating if tokenization was successful
 - `authentication`: Optional `Gr4vyAuthentication` object with authentication details
 
+The `authentication` object contains the following properties:
+
+| Property            | Type             | Description                                                      |
+| ------------------- | ---------------- | ---------------------------------------------------------------- |
+| `transactionStatus` | `"Y"`            | The transaction was successful                                   |
+|                     | `"N"`            | The transaction failed.                                          |
+|                     | `null`           | The transaction status is unknown                                |
+| `type`              | `null`           | The flow failed because the card used is not enrolled            |
+|                     | `"challenge"`    | The flow required the user to perform a challenge                |
+|                     | `"frictionless"` | The flow was successful without requiring a challenge            |
+|                     | `"error"`        | The flow encountered an error during the process                 |
+| `attempted`         | `boolean`        | Indicates if authentication was attempted                        |
+| `hasTimedOut`       | `boolean`        | Indicates if the authentication process timed out                |
+| `hasCancelled`      | `boolean`        | Indicates if the user cancelled the challenge                    |
+
 ### Tokenize stored payment method
 
 Tokenizes a previously stored payment method using its ID. The security code (CVV) can optionally be provided for additional verification.
