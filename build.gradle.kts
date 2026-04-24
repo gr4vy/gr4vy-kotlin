@@ -172,7 +172,7 @@ dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     
     // Netcetera SDK external dependencies (not embedded - must be provided)
-    implementation("org.bouncycastle:bcprov-jdk15to18:1.79")
+    implementation("org.bouncycastle:bcprov-jdk15to18:1.80")
     implementation("org.slf4j:slf4j-api:1.7.36")
 
     // Testing
