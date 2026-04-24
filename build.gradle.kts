@@ -168,11 +168,10 @@ dependencies {
 
     // Netcetera 3DS SDK (manual bundling - single artifact approach)
     // The Netcetera SDK is bundled into this library as per official documentation:
-    // https://3dss.netcetera.com/3dssdk/doc/2.25.0/android-integration
+    // https://3dss.netcetera.com/3dssdk/doc/2.28.0/android-integration
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
-    
+
     // Netcetera SDK external dependencies (not embedded - must be provided)
-    implementation("org.bouncycastle:bcprov-jdk15to18:1.80")
     implementation("org.slf4j:slf4j-api:1.7.36")
 
     // Testing
