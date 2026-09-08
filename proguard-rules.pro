@@ -9,6 +9,16 @@
 # For more information about ProGuard rules, visit:
 # https://www.guardsquare.com/proguard/manual/usage
 #
+# NOTE: this file is currently inert. build.gradle.kts sets isMinifyEnabled
+# to false for both the debug and release build types of this module, so R8
+# never applies these rules to anything. It would only take effect if
+# minification were enabled for building or testing this module itself, and
+# has no effect on consumer applications that depend on this SDK; those
+# receive consumer-rules.pro instead (see
+# `consumerProguardFiles("consumer-rules.pro")` in build.gradle.kts).
+# The Netcetera, BouncyCastle, and SLF4J keep rules live in consumer-rules.pro
+# rather than here; see that file for details.
+#
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
@@ -132,41 +142,16 @@
 # ------------------------------------------------------------------------------
 # NETCETERA 3DS SDK
 # ------------------------------------------------------------------------------
-# These rules ensure the Netcetera 3DS SDK functions correctly when bundled
-# into the Gr4vy SDK. Rules are based on official Netcetera documentation:
-# https://3dss.netcetera.com/3dssdk/doc/2.25.0/android-integration
-
-# Keep all Netcetera SDK classes and methods
--keep,includedescriptorclasses,includecode class com.netcetera.threeds.sdk.** { *; }
--keepnames class com.netcetera.threeds.sdk.** { *; }
--dontwarn com.netcetera.threeds.sdk.**
-
-# Keep Netcetera SDK drawable resources (card scheme logos)
--keepresources drawable/ds_logo_visa
--keepresources drawable/ds_logo_mastercard
--keepresources drawable/ds_logo_amex
--keepresources drawable/ds_logo_diners
--keepresources drawable/ds_logo_cb
--keepresources drawable/ds_logo_eftpos
--keepresources drawable/ds_logo_jcb
--keepresources drawable/ds_logo_union
--keepresources drawable/cb_background
--keepresources drawable/ic_password_toggle_masked
--keepresources drawable/ic_password_toggle_visible
-
-# Keep Netcetera SDK asset files (infrastructure files required by SDK)
--keepresourcefiles assets/com/netcetera/threeds/sdk/infrastructure/**
-
-# Keep Netcetera SDK native libraries (if bundled manually)
--keepresourcefiles jni/arm64-v8a/libae63.so,jni/armeabi-v7a/libae63.so,jni/x86/libae63.so,jni/x86_64/libae63.so
-
-# Keep BouncyCastle (Netcetera dependency - not embedded)
--keep class org.bouncycastle.** { *; }
--keepnames class org.bouncycastle.** { *; }
-
-# Keep SLF4J (Netcetera dependency - not embedded)
--keep class org.slf4j.** { *; }
--dontwarn org.slf4j.**
+# These rules live in consumer-rules.pro, the only ProGuard file R8 applies
+# to consuming applications (see `consumerProguardFiles` in build.gradle.kts).
+#
+# Drawable resource keeps are not needed here; res/raw/keep.xml already
+# preserves those for consumers. Native libraries and SDK assets under
+# jniLibs/ and assets/ also need no keep rule, since neither R8 code
+# shrinking nor Android resource shrinking removes files from those
+# directories, regardless of shrink settings. Note: "-keepresourcefiles" and
+# "-keepresources" are not valid ProGuard/R8 directives; R8 rejects both
+# with an "Unknown option" error.
 
 # ------------------------------------------------------------------------------
 # DEPENDENCY WARNINGS SUPPRESSION
