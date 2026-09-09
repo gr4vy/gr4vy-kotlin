@@ -11,9 +11,9 @@
 #
 # NOTE: this file is currently inert. build.gradle.kts sets isMinifyEnabled
 # to false for both the debug and release build types of this module, so R8
-# never applies these rules to anything. It would only take effect if
-# minification were enabled for building or testing this module itself, and
-# has no effect on consumer applications that depend on this SDK; those
+# never applies these rules to anything. This file is configured only for the
+# debug build type, so it would take effect if debug minification were enabled.
+# It has no effect on consumer applications that depend on this SDK; those
 # receive consumer-rules.pro instead (see
 # `consumerProguardFiles("consumer-rules.pro")` in build.gradle.kts).
 # The Netcetera, BouncyCastle, and SLF4J keep rules live in consumer-rules.pro
