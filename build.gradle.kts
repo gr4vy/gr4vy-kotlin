@@ -1,7 +1,7 @@
 plugins {
     id("com.android.library") version "8.11.1"
-    id("org.jetbrains.kotlin.android") version "2.0.21"
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
+    id("org.jetbrains.kotlin.android") version "2.4.21"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.4.21"
 
     // Central Portal publishing (handles maven-publish & signing)
     id("com.vanniktech.maven.publish") version "0.34.0"
@@ -157,7 +157,7 @@ android {
 
 dependencies {
     // Kotlin
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.0.21")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.4.21")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     // Serialization
