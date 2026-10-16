@@ -1,10 +1,10 @@
 plugins {
-    id("com.android.library") version "8.11.1"
-    id("org.jetbrains.kotlin.android") version "2.0.21"
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.serialization)
 
     // Central Portal publishing (handles maven-publish & signing)
-    id("com.vanniktech.maven.publish") version "0.34.0"
+    alias(libs.plugins.maven.publish)
 }
 
 import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
@@ -157,14 +157,14 @@ android {
 
 dependencies {
     // Kotlin
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.0.21")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation(libs.kotlin.stdlib)
+    implementation(libs.kotlinx.coroutines.android)
 
     // Serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    implementation(libs.kotlinx.serialization.json)
 
     // Networking
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation(libs.okhttp)
 
     // Netcetera 3DS SDK (manual bundling - single artifact approach)
     // The Netcetera SDK is bundled into this library as per official documentation:
@@ -172,16 +172,16 @@ dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
 
     // Netcetera SDK external dependencies (not embedded - must be provided)
-    implementation("org.slf4j:slf4j-api:1.7.36")
+    implementation(libs.slf4j.api)
 
     // Testing
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
-    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
-    testImplementation("org.robolectric:robolectric:4.11.1")
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.robolectric)
 
-    androidTestImplementation("androidx.test.ext:junit:1.3.0")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
 }
 
 // --------- Central Portal publishing via Vanniktech ---------
