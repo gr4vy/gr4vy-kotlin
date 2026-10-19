@@ -69,7 +69,7 @@ Add the following to your `build.gradle.kts` (Module: app):
 
 ```kotlin
 dependencies {
-    implementation("com.gr4vy:gr4vy-kotlin:1.2.2")
+    implementation("com.gr4vy:gr4vy-kotlin:1.3.0")
 }
 ```
 
@@ -77,7 +77,7 @@ Or in Groovy syntax (`build.gradle`):
 
 ```groovy
 dependencies {
-    implementation 'com.gr4vy:gr4vy-kotlin:1.2.2'
+    implementation 'com.gr4vy:gr4vy-kotlin:1.3.0'
 }
 ```
 
@@ -89,7 +89,7 @@ Add the following to your `pom.xml`:
 <dependency>
     <groupId>com.gr4vy</groupId>
     <artifactId>gr4vy-kotlin</artifactId>
-    <version>1.2.2</version>
+    <version>1.3.0</version>
 </dependency>
 ```
 
@@ -364,6 +364,7 @@ gr4vy.tokenize(
 - `sdkMaxTimeoutMinutes`: Maximum time for 3DS authentication in minutes (default: 5)
 - `authenticate`: This controls if we should attempt to authenticate the card data (default: false)
 - `uiCustomization`: (Optional) UI customization for the 3DS challenge screen
+- `preferredScheme`: (Optional) The card scheme the cardholder selected on a co-badged card (for example `cartes-bancaires`). 3DS runs on this scheme. If the value is invalid, Gr4vy falls back to the card's main scheme. If the scheme isn't set up for 3DS, `authentication.attempted` is `false`. Only used when `authenticate` is `true`.
 
 **Returns:** `Gr4vyTokenizeResult` containing:
 - `tokenized`: Boolean indicating if tokenization was successful

@@ -16,6 +16,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.net.URL
+import java.net.URLDecoder
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE, sdk = [26])
@@ -370,6 +371,134 @@ class Gr4vyUtilityTest {
         
         assertTrue("URL should contain session ID", url.toString().contains(sessionId))
         assertEquals("/checkout/sessions/session_test-123_abc/three-d-secure-version", url.path)
+    }
+
+    @Test
+    fun `test versioningURL without preferredScheme has no query`() {
+        val url = Gr4vyUtility.versioningURL(sandboxSetup, "session_12345")
+        
+        assertNull(url.query)
+    }
+
+    @Test
+    fun `test versioningURL with null preferredScheme has no query`() {
+        val url = Gr4vyUtility.versioningURL(sandboxSetup, "session_12345", null)
+        
+        assertNull(url.query)
+        assertEquals("https://api.sandbox.acme.gr4vy.app/checkout/sessions/session_12345/three-d-secure-version", url.toString())
+    }
+
+    @Test
+    fun `test versioningURL with empty preferredScheme has no query`() {
+        val url = Gr4vyUtility.versioningURL(sandboxSetup, "session_12345", "")
+        
+        assertNull(url.query)
+        assertEquals("https://api.sandbox.acme.gr4vy.app/checkout/sessions/session_12345/three-d-secure-version", url.toString())
+    }
+
+    @Test
+    fun `test versioningURL appends preferred_scheme`() {
+        val url = Gr4vyUtility.versioningURL(sandboxSetup, "session_12345", "cartes-bancaires")
+        
+        assertEquals(
+            "https://api.sandbox.acme.gr4vy.app/checkout/sessions/session_12345/three-d-secure-version?preferred_scheme=cartes-bancaires",
+            url.toString()
+        )
+        assertEquals("/checkout/sessions/session_12345/three-d-secure-version", url.path)
+        assertEquals("preferred_scheme=cartes-bancaires", url.query)
+    }
+
+    @Test
+    fun `test versioningURL URL-encodes preferredScheme`() {
+        val original = "cartes bancaires&x=1#y"
+        val url = Gr4vyUtility.versioningURL(sandboxSetup, "session_12345", original)
+        
+        assertEquals("preferred_scheme=cartes+bancaires%26x%3D1%23y", url.query)
+        assertNull("Encoded '#' must not start a fragment", url.ref)
+        assertEquals("/checkout/sessions/session_12345/three-d-secure-version", url.path)
+        assertEquals(original, URLDecoder.decode(url.query.substringAfter("="), "UTF-8"))
+    }
+
+    @Test
+    fun `test versioningURL encodes non-ASCII preferredScheme as UTF-8`() {
+        val url = Gr4vyUtility.versioningURL(sandboxSetup, "session_12345", "\u00e9")
+        
+        assertEquals("preferred_scheme=%C3%A9", url.query)
+    }
+
+    @Test
+    fun `test versioningURL with preferredScheme on production`() {
+        val url = Gr4vyUtility.versioningURL(productionSetup, "session_67890", "cartes-bancaires")
+        
+        assertEquals("api.acme.gr4vy.app", url.host)
+        assertEquals("/checkout/sessions/session_67890/three-d-secure-version", url.path)
+        assertEquals("preferred_scheme=cartes-bancaires", url.query)
+        assertEquals(
+            "https://api.acme.gr4vy.app/checkout/sessions/session_67890/three-d-secure-version?preferred_scheme=cartes-bancaires",
+            url.toString()
+        )
+    }
+
+    @Test
+    fun `test versioningURL sends whitespace-only preferredScheme`() {
+        // Only null and "" are omitted; no trimming or validation on the client
+        val url = Gr4vyUtility.versioningURL(sandboxSetup, "session_12345", "  ")
+        
+        assertEquals("preferred_scheme=++", url.query)
+    }
+
+    @Test
+    fun `test versioningURL encodes plus sign`() {
+        // Form encoding: a literal "+" must be escaped so it is not decoded as a space
+        val url = Gr4vyUtility.versioningURL(sandboxSetup, "session_12345", "a+b")
+        
+        assertEquals("preferred_scheme=a%2Bb", url.query)
+        assertEquals("a+b", URLDecoder.decode(url.query.substringAfter("="), "UTF-8"))
+    }
+
+    @Test
+    fun `test versioningURL keeps legacy two-argument JVM overload`() {
+        // @JvmOverloads keeps the pre-preferredScheme JVM signature for precompiled callers
+        val legacy = Gr4vyUtility::class.java.getMethod("versioningURL", Gr4vySetup::class.java, String::class.java)
+        val url = legacy.invoke(Gr4vyUtility, sandboxSetup, "session_12345") as URL
+        
+        assertNull(url.query)
+        assertEquals("/checkout/sessions/session_12345/three-d-secure-version", url.path)
+        assertNotNull(
+            Gr4vyUtility::class.java.getMethod("versioningURL", Gr4vySetup::class.java, String::class.java, String::class.java)
+        )
+    }
+
+    @Test
+    fun `test versioningURL round-trips reserved, percent and non-ASCII preferredScheme`() {
+        val values = listOf(
+            "a&preferred_scheme=visa",
+            "a=b",
+            "100%",
+            "%41",
+            "a/b?c",
+            "银联",
+            "Carte Bancaire & Co=1#x%2F/é"
+        )
+        for (value in values) {
+            val url = Gr4vyUtility.versioningURL(sandboxSetup, "session_12345", value)
+            val query = url.query
+
+            assertTrue("Expected a single preferred_scheme parameter for '$value': $query", query.startsWith("preferred_scheme=") && !query.contains('&'))
+            assertNull("Encoded value must not start a fragment for '$value'", url.ref)
+            assertTrue("Query must be printable ASCII for '$value': $query", query.all { it.code in 0x21..0x7E })
+            assertEquals(value, URLDecoder.decode(query.substringAfter("="), "UTF-8"))
+        }
+    }
+
+    @Test
+    fun `test versioningURL sends preferredScheme verbatim without validation`() {
+        // No allowlist, trimming or case folding on the client: Core API falls back for invalid values
+        for (value in listOf("VISA", "Cartes-Bancaires", "not-a-real-scheme", "x")) {
+            val url = Gr4vyUtility.versioningURL(sandboxSetup, "session_12345", value)
+
+            assertEquals("preferred_scheme=$value", url.query)
+        }
     }
 
     // MARK: - Create Transaction URL Tests

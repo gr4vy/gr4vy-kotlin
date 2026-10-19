@@ -1,5 +1,6 @@
 package com.gr4vy.sdk.services
 
+import com.gr4vy.sdk.Gr4vyError
 import com.gr4vy.sdk.Gr4vyServer
 import com.gr4vy.sdk.http.Gr4vyHttpClientProtocol
 import com.gr4vy.sdk.http.Gr4vyHttpConfiguration
@@ -90,5 +91,77 @@ class Gr4vyCheckoutSessionServiceTest {
         val service = Gr4vyCheckoutSessionService(testSetup, true, mockFactory)
         
         assertTrue("Should have debug mode enabled", service.debugMode)
+    }
+
+    // MARK: - callVersioning
+
+    @Test
+    fun `callVersioning parses response`() = runTest {
+        val mockHttpClient = MockHttpClient()
+        mockHttpClient.responseToReturn = """{"directory_server_id":"ds_1","message_version":"2.2.0","api_key":"k"}"""
+        val service = Gr4vyCheckoutSessionService(testSetup, false, MockHttpClientFactory(mockHttpClient))
+        
+        val response = service.callVersioning("session_123")
+        
+        assertNotNull(response)
+        assertEquals("ds_1", response!!.directoryServerId)
+        assertEquals("2.2.0", response.messageVersion)
+        assertEquals("k", response.apiKey)
+        assertEquals("GET", mockHttpClient.lastMethod)
+    }
+
+    @Test
+    fun `callVersioning appends preferred_scheme`() = runTest {
+        val mockHttpClient = MockHttpClient()
+        mockHttpClient.responseToReturn = """{"directory_server_id":"ds_1","message_version":"2.2.0","api_key":"k"}"""
+        val service = Gr4vyCheckoutSessionService(testSetup, false, MockHttpClientFactory(mockHttpClient))
+        
+        service.callVersioning("session_123", "cartes-bancaires")
+        
+        assertTrue(
+            "URL should carry preferred_scheme: ${mockHttpClient.lastUrl}",
+            mockHttpClient.lastUrl.endsWith("/three-d-secure-version?preferred_scheme=cartes-bancaires")
+        )
+    }
+
+    @Test
+    fun `callVersioning omits query when preferredScheme null or empty`() = runTest {
+        val mockHttpClient = MockHttpClient()
+        mockHttpClient.responseToReturn = """{"directory_server_id":"ds_1","message_version":"2.2.0","api_key":"k"}"""
+        val service = Gr4vyCheckoutSessionService(testSetup, false, MockHttpClientFactory(mockHttpClient))
+        
+        service.callVersioning("session_123", null)
+        assertFalse("Null preferredScheme should add no query: ${mockHttpClient.lastUrl}", mockHttpClient.lastUrl.contains("?"))
+        assertTrue(mockHttpClient.lastUrl.endsWith("/three-d-secure-version"))
+        
+        service.callVersioning("session_123", "")
+        assertFalse("Empty preferredScheme should add no query: ${mockHttpClient.lastUrl}", mockHttpClient.lastUrl.contains("?"))
+        assertTrue(mockHttpClient.lastUrl.endsWith("/three-d-secure-version"))
+    }
+
+    @Test
+    fun `callVersioning returns null on empty body`() = runTest {
+        // 204 No Content surfaces from the HTTP client as an empty body
+        val mockHttpClient = MockHttpClient()
+        mockHttpClient.responseToReturn = ""
+        val service = Gr4vyCheckoutSessionService(testSetup, false, MockHttpClientFactory(mockHttpClient))
+        
+        val response = service.callVersioning("session_123", "cartes-bancaires")
+        
+        assertNull("Empty body (204) should return null, not throw", response)
+    }
+
+    @Test
+    fun `callVersioning still throws on invalid non-empty body`() = runTest {
+        val mockHttpClient = MockHttpClient()
+        mockHttpClient.responseToReturn = "{\"unexpected\":true}"
+        val service = Gr4vyCheckoutSessionService(testSetup, false, MockHttpClientFactory(mockHttpClient))
+        
+        try {
+            service.callVersioning("session_123")
+            fail("Should have thrown a Gr4vyError for an invalid non-empty body")
+        } catch (e: Gr4vyError) {
+            // Expected: existing decode-failure behaviour is preserved
+        }
     }
 } 
