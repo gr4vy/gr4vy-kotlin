@@ -5,6 +5,7 @@ import com.gr4vy.sdk.models.Gr4vySetup
 import com.gr4vy.sdk.Gr4vyServer
 import java.net.URL
 import java.net.MalformedURLException
+import java.net.URLEncoder
 
 object Gr4vyUtility {
     
@@ -80,7 +81,8 @@ object Gr4vyUtility {
     }
     
     @Throws(Gr4vyError.BadURL::class)
-    fun versioningURL(setup: Gr4vySetup, checkoutSessionId: String): URL {
+    @JvmOverloads
+    fun versioningURL(setup: Gr4vySetup, checkoutSessionId: String, preferredScheme: String? = null): URL {
         if (setup.gr4vyId.isEmpty()) {
             throw Gr4vyError.BadURL("Gr4vy ID is empty")
         }
@@ -90,7 +92,13 @@ object Gr4vyUtility {
         
         val subdomainPrefix = if (setup.server == Gr4vyServer.SANDBOX) "sandbox." else ""
         
-        val urlString = "https://api.$subdomainPrefix${setup.gr4vyId}.gr4vy.app/checkout/sessions/$checkoutSessionId/three-d-secure-version"
+        val baseUrl = "https://api.$subdomainPrefix${setup.gr4vyId}.gr4vy.app/checkout/sessions/$checkoutSessionId/three-d-secure-version"
+        // Encode explicitly: the URL is built by interpolation. "UTF-8" (String) overload because minSdk is 26.
+        val urlString = if (preferredScheme.isNullOrEmpty()) {
+            baseUrl
+        } else {
+            "$baseUrl?preferred_scheme=${URLEncoder.encode(preferredScheme, "UTF-8")}"
+        }
         
         return try {
             URL(urlString)

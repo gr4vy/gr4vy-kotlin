@@ -83,6 +83,9 @@ internal class Gr4vy3DSService(
     
     /**
      * Main tokenization method with 3DS authentication (suspend version)
+     *
+     * @param preferredScheme Optional card scheme selected on a co-badged card, sent as `preferred_scheme`.
+     *   Only used when `authenticate` is true.
      */
     suspend fun <TRequest : Gr4vyRequest> tokenize(
         checkoutSessionId: String,
@@ -90,7 +93,8 @@ internal class Gr4vy3DSService(
         activity: Activity,
         sdkMaxTimeoutMinutes: Int,
         authenticate: Boolean,
-        uiCustomization: Gr4vyThreeDSUiCustomizationMap? = null
+        uiCustomization: Gr4vyThreeDSUiCustomizationMap? = null,
+        preferredScheme: String? = null
     ): Gr4vyTokenizeResult {
         activityWeakRef = WeakReference(activity)
         
@@ -101,7 +105,8 @@ internal class Gr4vy3DSService(
                 activity,
                 sdkMaxTimeoutMinutes,
                 authenticate,
-                uiCustomization
+                uiCustomization,
+                preferredScheme
             )
         } finally {
             activityWeakRef = null
@@ -110,6 +115,9 @@ internal class Gr4vy3DSService(
     
     /**
      * Main tokenization method with 3DS authentication (callback version)
+     *
+     * @param preferredScheme Optional card scheme selected on a co-badged card, sent as `preferred_scheme`.
+     *   Only used when `authenticate` is true.
      */
     fun <TRequest : Gr4vyRequest> tokenize(
         checkoutSessionId: String,
@@ -118,6 +126,7 @@ internal class Gr4vy3DSService(
         sdkMaxTimeoutMinutes: Int,
         authenticate: Boolean,
         uiCustomization: Gr4vyThreeDSUiCustomizationMap? = null,
+        preferredScheme: String? = null,
         completion: (Result<Gr4vyTokenizeResult>) -> Unit
     ) {
         Gr4vyErrorHandler.handleCallback(
@@ -129,7 +138,8 @@ internal class Gr4vy3DSService(
                     activity,
                     sdkMaxTimeoutMinutes,
                     authenticate,
-                    uiCustomization
+                    uiCustomization,
+                    preferredScheme
                 )
             },
             completion = completion
@@ -145,7 +155,8 @@ internal class Gr4vy3DSService(
         activity: Activity,
         sdkMaxTimeoutMinutes: Int,
         authenticate: Boolean,
-        uiCustomization: Gr4vyThreeDSUiCustomizationMap?
+        uiCustomization: Gr4vyThreeDSUiCustomizationMap?,
+        preferredScheme: String?
     ): Gr4vyTokenizeResult {
         // Step 1: Tokenize the card
         Gr4vyLogger.debug("Step 1: Tokenizing card data")
@@ -162,21 +173,16 @@ internal class Gr4vy3DSService(
         // Step 2: Get versioning information
         Gr4vyLogger.debug("Step 2: Fetching 3DS versioning")
         val versioningResponse = try {
-            checkoutSessionService.callVersioning(checkoutSessionId)
+            checkoutSessionService.callVersioning(checkoutSessionId, preferredScheme)
         } catch (e: Exception) {
             Gr4vyLogger.error("Versioning failed: ${e.message}")
             // Return tokenized without authentication if versioning fails
-            return Gr4vyTokenizeResult(
-                tokenized = true,
-                authentication = Gr4vyAuthentication(
-                    attempted = false,
-                    type = null,
-                    transactionStatus = null,
-                    hasCancelled = false,
-                    hasTimedOut = false,
-                    cardholderInfo = null
-                )
-            )
+            return unattemptedAuthenticationResult()
+        }
+        
+        if (versioningResponse == null) {
+            Gr4vyLogger.debug("3DS versioning returned no content (204): card scheme not set up for 3DS, skipping authentication")
+            return unattemptedAuthenticationResult()
         }
         
         // Step 3: Perform 3DS authentication
@@ -189,6 +195,19 @@ internal class Gr4vy3DSService(
             activity
         )
     }
+    
+    /** Tokenized result for when 3DS was requested but couldn't be attempted. */
+    private fun unattemptedAuthenticationResult() = Gr4vyTokenizeResult(
+        tokenized = true,
+        authentication = Gr4vyAuthentication(
+            attempted = false,
+            type = null,
+            transactionStatus = null,
+            hasCancelled = false,
+            hasTimedOut = false,
+            cardholderInfo = null
+        )
+    )
     
     /**
      * Perform the complete 3DS authentication flow

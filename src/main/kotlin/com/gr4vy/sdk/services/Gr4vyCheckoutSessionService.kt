@@ -142,15 +142,22 @@ class Gr4vyCheckoutSessionService(
     }
     
     /**
-     * Call the 3DS versioning endpoint to get configuration for Netcetera SDK
+     * Call the 3DS versioning endpoint to get configuration for Netcetera SDK.
+     *
+     * @param preferredScheme Optional card scheme selected by the cardholder on a co-badged card;
+     *   sent as `preferred_scheme` when not null/empty.
+     * @return The versioning response, or `null` when the endpoint returns 204 No Content
+     *   (the card's scheme isn't set up for 3DS).
      */
     internal suspend fun callVersioning(
-        checkoutSessionId: String
-    ): com.gr4vy.sdk.responses.Gr4vyVersioningResponse {
+        checkoutSessionId: String,
+        preferredScheme: String? = null
+    ): com.gr4vy.sdk.responses.Gr4vyVersioningResponse? {
         return Gr4vyErrorHandler.handleAsync("CheckoutSessionService.callVersioning") {
             val url = Gr4vyUtility.versioningURL(
                 configuration.setup, 
-                checkoutSessionId
+                checkoutSessionId,
+                preferredScheme
             ).toString()
             
             val data = httpClient.perform(
@@ -161,7 +168,13 @@ class Gr4vyCheckoutSessionService(
                 timeout = null
             )
             
-            Gr4vyResponseParser.parse<com.gr4vy.sdk.responses.Gr4vyVersioningResponse>(data)
+            // 204 No Content: the card's scheme isn't set up for 3DS. The HTTP client only
+            // surfaces the body, and 204 is the only success this endpoint returns without one.
+            if (data.isEmpty()) {
+                null
+            } else {
+                Gr4vyResponseParser.parse<com.gr4vy.sdk.responses.Gr4vyVersioningResponse>(data)
+            }
         }
     }
     
