@@ -9,6 +9,7 @@ import com.gr4vy.sdk.http.Gr4vyRequest
 import com.gr4vy.sdk.models.Gr4vyAuthentication
 import com.gr4vy.sdk.models.Gr4vyPaymentMethod
 import com.gr4vy.sdk.models.Gr4vySetup
+import com.gr4vy.sdk.models.Gr4vyThreeDSUiCustomizationMap
 import com.gr4vy.sdk.models.Gr4vyTokenizeResult
 import com.gr4vy.sdk.requests.Gr4vyCheckoutSessionRequest
 import com.gr4vy.sdk.services.Gr4vy3DSService
@@ -38,6 +39,7 @@ import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.coroutines.Continuation
 
 /**
  * End-to-end tests for `preferredScheme` on the 3DS `tokenize` overloads, through the public API
@@ -545,6 +547,24 @@ class Gr4vyPreferredSchemeTest {
 
         assertEquals(unattempted, result.getOrThrow())
         assertEquals("carte-bancaire", requests[1].url.queryParameter("preferredScheme"))
+    }
+
+    @Test
+    fun `1_2_x tokenize JVM signatures are still present`() {
+        val common = listOf(
+            String::class.java,
+            Gr4vyRequest::class.java,
+            Activity::class.java,
+            Int::class.javaPrimitiveType,
+            Boolean::class.javaPrimitiveType,
+            Gr4vyThreeDSUiCustomizationMap::class.java
+        )
+        val signatures = Gr4vy::class.java.methods
+            .filter { it.name == "tokenize" }
+            .map { it.parameterTypes.toList() }
+
+        assertTrue(signatures.contains(common + Continuation::class.java))
+        assertTrue(signatures.contains(common + Function1::class.java))
     }
 
     // MARK: - Internal 3DS service

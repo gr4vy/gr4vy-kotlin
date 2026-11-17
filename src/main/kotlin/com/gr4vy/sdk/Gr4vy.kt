@@ -535,7 +535,25 @@ class Gr4vy @Throws(Gr4vyError::class) constructor(
             preferredScheme
         )
     }
-    
+
+    /** The 1.2.x signature, without `preferredScheme`, kept so apps compiled against it still link. */
+    suspend fun <TRequest : com.gr4vy.sdk.http.Gr4vyRequest> tokenize(
+        checkoutSessionId: String,
+        cardData: TRequest,
+        activity: android.app.Activity,
+        sdkMaxTimeoutMinutes: Int,
+        authenticate: Boolean,
+        uiCustomization: com.gr4vy.sdk.models.Gr4vyThreeDSUiCustomizationMap?
+    ): com.gr4vy.sdk.models.Gr4vyTokenizeResult = tokenize(
+        checkoutSessionId,
+        cardData,
+        activity,
+        sdkMaxTimeoutMinutes,
+        authenticate,
+        uiCustomization,
+        null
+    )
+
     /**
      * Securely tokenizes payment method data with 3D Secure authentication support using callbacks.
      *
@@ -605,6 +623,26 @@ class Gr4vy @Throws(Gr4vyError::class) constructor(
             completion
         )
     }
+
+    /** The 1.2.x signature, without `preferredScheme`, kept so apps compiled against it still link. */
+    fun <TRequest : com.gr4vy.sdk.http.Gr4vyRequest> tokenize(
+        checkoutSessionId: String,
+        cardData: TRequest,
+        activity: android.app.Activity,
+        sdkMaxTimeoutMinutes: Int,
+        authenticate: Boolean,
+        uiCustomization: com.gr4vy.sdk.models.Gr4vyThreeDSUiCustomizationMap?,
+        completion: (Result<com.gr4vy.sdk.models.Gr4vyTokenizeResult>) -> Unit
+    ) = tokenize(
+        checkoutSessionId,
+        cardData,
+        activity,
+        sdkMaxTimeoutMinutes,
+        authenticate,
+        uiCustomization,
+        null,
+        completion
+    )
     
     /**
      * Cleans up SDK resources and disposes of sensitive payment data.
