@@ -26,6 +26,6 @@ SESSION=$(gr4vy checkout-sessions create --compact \
 "$ADB" logcat -c
 "$ADB" shell am start -n "$PKG/.MainActivity" \
   --es qa_session "$SESSION" --es qa_gr4vy_id "$ID" --es qa_merchant_id "${MERCHANT:-default}" \
-  --es qa_token "$(gr4vy token -e 2h)" --es qa_pan "$PAN" --es qa_cvv "$CVV" \
+  --es qa_token "$(gr4vy token -e 30m)" --es qa_pan "$PAN" --es qa_cvv "$CVV" \
   --es qa_authenticate "$AUTHENTICATE" --es qa_preferred_scheme "'$PREFERRED'" > /dev/null
 echo "session=$SESSION currency=$CURRENCY card=${PAN:0:6}… preferred='$PREFERRED' authenticate=$AUTHENTICATE"

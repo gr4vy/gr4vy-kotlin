@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tiny adb driver. usage: adrive.py tap "<text>" | shot <file> | log | texts"""
 import subprocess, sys, re, os, time
-ADB = os.path.expanduser("~/Library/Android/sdk/platform-tools/adb")
+ADB = os.environ.get("ADB") or os.path.expanduser("~/Library/Android/sdk/platform-tools/adb")
 def dump():
     subprocess.run([ADB,"shell","uiautomator","dump","/sdcard/ui.xml"],capture_output=True)
     return subprocess.run([ADB,"shell","cat","/sdcard/ui.xml"],capture_output=True,text=True).stdout
