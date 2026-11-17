@@ -3,7 +3,7 @@
 Developer-friendly & type-safe Kotlin SDK specifically catered to leverage *Gr4vy* API.
 
 <div align="left">
-    <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.0.21-orange?style=for-the-badge">
+    <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.3%2B-orange?style=for-the-badge">
     <img alt="Platforms" src="https://img.shields.io/badge/Platforms-Android-yellowgreen?style=for-the-badge">
     <img alt="Maven Central" src="https://img.shields.io/maven-central/v/com.gr4vy/gr4vy-kotlin.svg?style=for-the-badge">
     <img alt="Build Status" src="https://img.shields.io/github/actions/workflow/status/gr4vy/gr4vy-kotlin/build.yml?branch=main&style=for-the-badge">
