@@ -8,7 +8,8 @@
 # Usage: scripts/qa/probe-versioning.sh <card_number> <currency> <cvv> [query ...]
 #   scripts/qa/probe-versioning.sh 4556557955726624 GBP 123 "" "?preferred_scheme=visa" "?preferredScheme=visa"
 #
-# Needs the gr4vy CLI with an active sandbox profile (`gr4vy config list`). Never prints the token.
+# Needs the gr4vy CLI with an active sandbox profile (`gr4vy config list`). Never prints the token
+# or the `api_key` the versioning response carries for the 3DS SDK.
 set -euo pipefail
 
 CARD=$1; CURRENCY=$2; CVV=$3; shift 3
@@ -29,5 +30,5 @@ for q in "${QUERIES[@]}"; do
     -d "{\"payment_method\":{\"method\":\"card\",\"number\":\"$CARD\",\"expiration_date\":\"01/30\",\"security_code\":\"$CVV\"}}"
   out=$(curl -s -w '\n%{http_code}' "$BASE/checkout/sessions/$sid/three-d-secure-version$q" \
     -H "Authorization: Bearer $TOKEN")
-  printf '%-40s -> %s %s\n' "${q:-(no query)}" "${out##*$'\n'}" "$(printf '%s' "${out%$'\n'*}" | head -c 120)"
+  printf '%-40s -> %s %s\n' "${q:-(no query)}" "${out##*$'\n'}" "$(printf '%s' "${out%$'\n'*}" | sed -E 's/"api_key" *: *"[^"]*"/"api_key":"[redacted]"/' | head -c 120)"
 done

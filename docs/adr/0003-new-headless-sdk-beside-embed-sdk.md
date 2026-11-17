@@ -5,7 +5,7 @@ date: 2025-05-23
 
 # A new headless SDK beside the Embed mobile SDK, ending at the checkout session
 
-Gr4vy's existing Android SDK, [gr4vy-android](https://github.com/gr4vy/gr4vy-android), shows the hosted Embed checkout in a web view. Merchants wanted their own native card form instead ([FEAT-390](https://gr4vy.atlassian.net/browse/FEAT-390), with one merchant as the launch customer). The Native Mobile SDK product brief (shared 2025-05-23) asked whether to extend the current SDK or start a new one, and chose a new one. This SDK has no UI. It wraps the Gr4vy API calls a native checkout needs, and it stops once the card data (and, later, the 3DS outcome) is on a checkout session. The merchant's server creates the transaction: the brief ruled out client-side processing and runs only 3DS on the device, so the server can process in one request.
+Gr4vy's existing Android SDK, [gr4vy-android](https://github.com/gr4vy/gr4vy-android), shows the hosted Embed checkout in a web view. Merchants wanted their own native card form instead (FEAT-390, with one merchant as the launch customer). The Native Mobile SDK product brief (shared 2025-05-23) asked whether to extend the current SDK or start a new one, and chose a new one. This SDK has no UI. It wraps the Gr4vy API calls a native checkout needs, and it stops once the card data (and, later, the 3DS outcome) is on a checkout session. The merchant's server creates the transaction: the brief ruled out client-side processing and runs only 3DS on the device, so the server can process in one request.
 
 ## Considered options
 
