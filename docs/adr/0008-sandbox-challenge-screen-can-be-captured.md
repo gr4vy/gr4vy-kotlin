@@ -16,6 +16,7 @@ The 3DS SDK has no setting for this. Its documented workaround, clearing the fla
 
 ## Consequences
 
+- "Sandbox only sees test cards" relies on Gr4vy's backend: sandbox instances use the 3DS test directory servers and demo ACS, so no real issuer's challenge appears there. If a sandbox instance were ever routed to production 3DS, this would make real challenges capturable on Android 10+, and should be revisited.
 - This needs Android 10 (API 29) or newer, where `WindowInspector` exists. On older versions, sandbox challenges stay blank.
 - Only the challenge window is touched, so a merchant's own `FLAG_SECURE` windows stay secure, even ones shown during the challenge.
 - The match depends on the 3DS SDK keeping those view ids, which we copy by hand when upgrading it ([ADR 0007](0007-3ds-sdk-unpacked-into-one-artifact.md)). If a release renames them, sandbox challenges simply stay blank, and QA's challenge screenshot comes out black.
