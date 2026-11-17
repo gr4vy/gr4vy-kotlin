@@ -8,5 +8,5 @@
 package com.gr4vy.sdk
 
 internal object Version {
-    const val current = "1.2.2"
+    const val current = "1.3.0"
 } 

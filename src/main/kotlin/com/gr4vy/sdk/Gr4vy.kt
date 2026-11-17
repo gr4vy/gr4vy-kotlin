@@ -472,7 +472,8 @@ class Gr4vy @Throws(Gr4vyError::class) constructor(
      *             cardData = cardData,
      *             activity = this@PaymentActivity,
      *             sdkMaxTimeoutMinutes = 5,
-     *             authenticate = true
+     *             authenticate = true,
+     *             preferredScheme = "carte-bancaire" // optional, for co-badged cards
      *         )
      *         
      *         if (result.tokenized) {
@@ -503,6 +504,7 @@ class Gr4vy @Throws(Gr4vyError::class) constructor(
      * @param sdkMaxTimeoutMinutes Maximum time for 3DS authentication in minutes (default: 5)
      * @param authenticate Controls if 3DS authentication should be attempted (default: false)
      * @param uiCustomization Optional UI customization for the 3DS challenge screen (supports light/dark themes)
+     * @param preferredScheme Optional Gr4vy scheme ID the cardholder chose on a co-badged card (e.g. "carte-bancaire"). 3DS runs on this scheme. If the card doesn't carry it, Gr4vy uses the card's primary scheme. If the scheme isn't set up for 3DS, or isn't a Gr4vy scheme ID, the result has `authentication.attempted == false`. Omit or pass null to keep the default behaviour. Only used when `authenticate` is true.
      *
      * @return [Gr4vyTokenizeResult] containing tokenization status and authentication details
      *
@@ -520,7 +522,8 @@ class Gr4vy @Throws(Gr4vyError::class) constructor(
         activity: android.app.Activity,
         sdkMaxTimeoutMinutes: Int = 5,
         authenticate: Boolean = false,
-        uiCustomization: com.gr4vy.sdk.models.Gr4vyThreeDSUiCustomizationMap? = null
+        uiCustomization: com.gr4vy.sdk.models.Gr4vyThreeDSUiCustomizationMap? = null,
+        preferredScheme: String? = null
     ): com.gr4vy.sdk.models.Gr4vyTokenizeResult {
         return threeDS.tokenize(
             checkoutSessionId,
@@ -528,10 +531,29 @@ class Gr4vy @Throws(Gr4vyError::class) constructor(
             activity,
             sdkMaxTimeoutMinutes,
             authenticate,
-            uiCustomization
+            uiCustomization,
+            preferredScheme
         )
     }
-    
+
+    /** The 1.2.x signature, without `preferredScheme`, kept so apps compiled against it still link. */
+    suspend fun <TRequest : com.gr4vy.sdk.http.Gr4vyRequest> tokenize(
+        checkoutSessionId: String,
+        cardData: TRequest,
+        activity: android.app.Activity,
+        sdkMaxTimeoutMinutes: Int = 5,
+        authenticate: Boolean = false,
+        uiCustomization: com.gr4vy.sdk.models.Gr4vyThreeDSUiCustomizationMap? = null
+    ): com.gr4vy.sdk.models.Gr4vyTokenizeResult = tokenize(
+        checkoutSessionId,
+        cardData,
+        activity,
+        sdkMaxTimeoutMinutes,
+        authenticate,
+        uiCustomization,
+        null
+    )
+
     /**
      * Securely tokenizes payment method data with 3D Secure authentication support using callbacks.
      *
@@ -573,6 +595,7 @@ class Gr4vy @Throws(Gr4vyError::class) constructor(
      * @param sdkMaxTimeoutMinutes Maximum time for 3DS authentication in minutes (default: 5)
      * @param authenticate Controls if 3DS authentication should be attempted (default: false)
      * @param uiCustomization Optional UI customization for the 3DS challenge screen (supports light/dark themes)
+     * @param preferredScheme Optional Gr4vy scheme ID the cardholder chose on a co-badged card (e.g. "carte-bancaire"). 3DS runs on this scheme. If the card doesn't carry it, Gr4vy uses the card's primary scheme. If the scheme isn't set up for 3DS, or isn't a Gr4vy scheme ID, the result has `authentication.attempted == false`. Omit or pass null to keep the default behaviour. Only used when `authenticate` is true.
      * @param completion Result callback with [Gr4vyTokenizeResult] on success or error on failure
      *
      * @see Gr4vyTokenizeResult
@@ -586,6 +609,7 @@ class Gr4vy @Throws(Gr4vyError::class) constructor(
         sdkMaxTimeoutMinutes: Int = 5,
         authenticate: Boolean = false,
         uiCustomization: com.gr4vy.sdk.models.Gr4vyThreeDSUiCustomizationMap? = null,
+        preferredScheme: String? = null,
         completion: (Result<com.gr4vy.sdk.models.Gr4vyTokenizeResult>) -> Unit
     ) {
         threeDS.tokenize(
@@ -595,9 +619,30 @@ class Gr4vy @Throws(Gr4vyError::class) constructor(
             sdkMaxTimeoutMinutes,
             authenticate,
             uiCustomization,
+            preferredScheme,
             completion
         )
     }
+
+    /** The 1.2.x signature, without `preferredScheme`, kept so apps compiled against it still link. */
+    fun <TRequest : com.gr4vy.sdk.http.Gr4vyRequest> tokenize(
+        checkoutSessionId: String,
+        cardData: TRequest,
+        activity: android.app.Activity,
+        sdkMaxTimeoutMinutes: Int = 5,
+        authenticate: Boolean = false,
+        uiCustomization: com.gr4vy.sdk.models.Gr4vyThreeDSUiCustomizationMap? = null,
+        completion: (Result<com.gr4vy.sdk.models.Gr4vyTokenizeResult>) -> Unit
+    ) = tokenize(
+        checkoutSessionId,
+        cardData,
+        activity,
+        sdkMaxTimeoutMinutes,
+        authenticate,
+        uiCustomization,
+        null,
+        completion
+    )
     
     /**
      * Cleans up SDK resources and disposes of sensitive payment data.
