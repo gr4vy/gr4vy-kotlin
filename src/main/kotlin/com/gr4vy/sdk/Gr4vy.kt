@@ -541,9 +541,9 @@ class Gr4vy @Throws(Gr4vyError::class) constructor(
         checkoutSessionId: String,
         cardData: TRequest,
         activity: android.app.Activity,
-        sdkMaxTimeoutMinutes: Int,
-        authenticate: Boolean,
-        uiCustomization: com.gr4vy.sdk.models.Gr4vyThreeDSUiCustomizationMap?
+        sdkMaxTimeoutMinutes: Int = 5,
+        authenticate: Boolean = false,
+        uiCustomization: com.gr4vy.sdk.models.Gr4vyThreeDSUiCustomizationMap? = null
     ): com.gr4vy.sdk.models.Gr4vyTokenizeResult = tokenize(
         checkoutSessionId,
         cardData,
@@ -629,9 +629,9 @@ class Gr4vy @Throws(Gr4vyError::class) constructor(
         checkoutSessionId: String,
         cardData: TRequest,
         activity: android.app.Activity,
-        sdkMaxTimeoutMinutes: Int,
-        authenticate: Boolean,
-        uiCustomization: com.gr4vy.sdk.models.Gr4vyThreeDSUiCustomizationMap?,
+        sdkMaxTimeoutMinutes: Int = 5,
+        authenticate: Boolean = false,
+        uiCustomization: com.gr4vy.sdk.models.Gr4vyThreeDSUiCustomizationMap? = null,
         completion: (Result<com.gr4vy.sdk.models.Gr4vyTokenizeResult>) -> Unit
     ) = tokenize(
         checkoutSessionId,

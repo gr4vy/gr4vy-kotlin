@@ -550,7 +550,7 @@ class Gr4vyPreferredSchemeTest {
     }
 
     @Test
-    fun `1_2_x tokenize JVM signatures are still present`() {
+    fun `1_2_x tokenize JVM signatures and default-argument bridges are still present`() {
         val common = listOf(
             String::class.java,
             Gr4vyRequest::class.java,
@@ -559,12 +559,15 @@ class Gr4vyPreferredSchemeTest {
             Boolean::class.javaPrimitiveType,
             Gr4vyThreeDSUiCustomizationMap::class.java
         )
-        val signatures = Gr4vy::class.java.methods
-            .filter { it.name == "tokenize" }
+        fun signatures(name: String) = Gr4vy::class.java.declaredMethods
+            .filter { it.name == name }
             .map { it.parameterTypes.toList() }
+        val defaultsMask = listOf(Int::class.javaPrimitiveType, Any::class.java)
 
-        assertTrue(signatures.contains(common + Continuation::class.java))
-        assertTrue(signatures.contains(common + Function1::class.java))
+        assertTrue(signatures("tokenize").contains(common + Continuation::class.java))
+        assertTrue(signatures("tokenize").contains(common + Function1::class.java))
+        assertTrue(signatures("tokenize\$default").contains(listOf(Gr4vy::class.java) + common + Continuation::class.java + defaultsMask))
+        assertTrue(signatures("tokenize\$default").contains(listOf(Gr4vy::class.java) + common + Function1::class.java + defaultsMask))
     }
 
     // MARK: - Internal 3DS service
