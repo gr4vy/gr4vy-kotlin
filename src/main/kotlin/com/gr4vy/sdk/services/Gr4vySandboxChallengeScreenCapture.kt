@@ -1,5 +1,6 @@
 package com.gr4vy.sdk.services
 
+import android.annotation.TargetApi
 import android.app.Activity
 import android.os.Build
 import android.os.Handler
@@ -15,43 +16,51 @@ import com.gr4vy.sdk.utils.Gr4vyLogger
  * Lets screenshots and screen mirroring show the 3DS challenge, in sandbox only.
  *
  * The 3DS SDK draws the challenge in a full-screen dialog with `FLAG_SECURE`, which blanks it
- * out of screenshots and screen sharing (a PCI requirement for real cards). Sandbox only ever
- * sees test cards, so while a sandbox challenge runs this clears that flag on the challenge's
- * own window, which it recognises by the challenge UI's view ids, and puts the flag back when
- * the challenge ends. No other window is touched, and production never creates this at all.
+ * out of screenshots and screen sharing (a cardholder-data protection for real cards). Sandbox
+ * only ever sees test cards, so while a sandbox challenge runs this clears that flag on the
+ * challenge's own window, which it recognises by the challenge UI's view ids, and puts the flag
+ * back when the challenge ends. No other window is touched, and production never creates this.
  */
 internal class Gr4vySandboxChallengeScreenCapture private constructor(private val activity: Activity) {
 
     private val handler = Handler(Looper.getMainLooper())
-    private val clearedWindows = mutableListOf<View>()
+    private val clearedWindows = LinkedHashSet<View>()
 
     @Volatile
     private var running = false
 
+    @Volatile
+    private var stopped = false
+
     private val clearSecureFlags = object : Runnable {
         override fun run() {
             if (!running) return
-            clearSecureFlagOnChallengeWindows()
+            if (activity.isFinishing || activity.isDestroyed) {
+                stop()
+                return
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) clearSecureFlagOnChallengeWindows()
             handler.postDelayed(this, POLL_INTERVAL_MS)
         }
     }
 
-    /** Call on the main thread, just before the challenge starts. */
+    /** Call on the main thread, just before the challenge starts. Does nothing once stopped. */
     fun start() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+        if (stopped || Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
         running = true
         handler.post(clearSecureFlags)
     }
 
     /** Safe to call more than once, from any thread. Restores the flag on the main thread. */
     fun stop() {
+        stopped = true
         running = false
         handler.removeCallbacks(clearSecureFlags)
         handler.post { restoreSecureFlags() }
     }
 
+    @TargetApi(Build.VERSION_CODES.Q)
     private fun clearSecureFlagOnChallengeWindows() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
         for (root in WindowInspector.getGlobalWindowViews()) {
             if (!isChallengeWindow(root)) continue
             val params = root.layoutParams as? WindowManager.LayoutParams ?: continue
@@ -91,7 +100,7 @@ internal class Gr4vySandboxChallengeScreenCapture private constructor(private va
             R.id.challenge_ui_html
         )
 
-        internal fun isChallengeWindow(root: View): Boolean =
+        private fun isChallengeWindow(root: View): Boolean =
             CHALLENGE_VIEW_IDS.any { root.findViewById<View>(it) != null }
 
         /** Returns a helper for sandbox, and `null` for production. */

@@ -571,7 +571,7 @@ The authentication result includes a transaction status code that indicates the 
 
 ### Screenshots and screen sharing
 
-In production, the challenge screen can't be captured: screenshots, screen recording and screen mirroring show it blank, as PCI requires. In sandbox, which only uses test cards, the SDK lets the challenge screen be captured, so you can record, demo and mirror test payments. This needs Android 10 or newer; on older versions the challenge screen stays blank in sandbox too.
+In production, the 3DS SDK protects the challenge screen: screenshots, screen recording and screen mirroring show it blank, to protect cardholder data. In sandbox, which only uses test cards, this SDK lets the challenge screen be captured, so you can record, demo and mirror test payments. This needs Android 10 or newer; on older versions the challenge screen stays blank in sandbox too. The brief loading spinner shown before the challenge may still record blank.
 
 ### Customizing the 3DS UI
 

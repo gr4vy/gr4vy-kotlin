@@ -14,6 +14,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlin.concurrent.thread
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
@@ -61,5 +62,46 @@ class Gr4vySandboxChallengeScreenCaptureTest {
         capture.stop()
         idle()
         assertTrue("challenge window should be secure again", challenge.isSecure())
+    }
+
+    @Test
+    fun `stop from a background thread still restores the flag`() {
+        val activity = activity()
+        val challenge = secureDialog(activity, R.id.challenge_ui_cancel)
+        val capture = Gr4vySandboxChallengeScreenCapture.forServer(Gr4vyServer.SANDBOX, activity)!!
+
+        capture.start()
+        idle()
+        assertFalse(challenge.isSecure())
+
+        thread { capture.stop() }.join()
+        idle()
+        assertTrue(challenge.isSecure())
+    }
+
+    @Test
+    fun `start after stop does nothing`() {
+        val activity = activity()
+        val challenge = secureDialog(activity, R.id.challenge_ui_cancel)
+        val capture = Gr4vySandboxChallengeScreenCapture.forServer(Gr4vyServer.SANDBOX, activity)!!
+
+        capture.stop()
+        capture.start()
+        idle()
+        assertTrue("a challenge cancelled before it started stays secure", challenge.isSecure())
+    }
+
+    @Test
+    @Config(sdk = [28])
+    fun `before Android 10 the challenge stays secure in sandbox`() {
+        val activity = activity()
+        val challenge = secureDialog(activity, R.id.challenge_ui_cancel)
+        val capture = Gr4vySandboxChallengeScreenCapture.forServer(Gr4vyServer.SANDBOX, activity)!!
+
+        capture.start()
+        idle()
+        assertTrue(challenge.isSecure())
+        capture.stop()
+        idle()
     }
 }
