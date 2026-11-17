@@ -166,17 +166,7 @@ object Gr4vyRequiredFieldsSerializer : KSerializer<Gr4vyRequiredFields> {
         "phone_number", "account_number", "address"
     )
     
-    override val descriptor: SerialDescriptor = object : SerialDescriptor {
-        override val serialName: String = "Gr4vyRequiredFields"
-        override val kind: SerialKind = StructureKind.CLASS
-        override val elementsCount: Int = 0
-        override fun getElementName(index: Int): String = throw UnsupportedOperationException()
-        override fun getElementIndex(name: String): Int = throw UnsupportedOperationException()
-        override fun getElementDescriptor(index: Int): SerialDescriptor = throw UnsupportedOperationException()
-        override fun getElementAnnotations(index: Int): List<Annotation> = emptyList()
-        override fun isElementOptional(index: Int): Boolean = true
-        override val annotations: List<Annotation> = emptyList()
-    }
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("Gr4vyRequiredFields")
     
     override fun serialize(encoder: Encoder, value: Gr4vyRequiredFields) {
         val jsonEncoder = encoder as? JsonEncoder
@@ -259,17 +249,7 @@ object Gr4vyRequiredFieldsSerializer : KSerializer<Gr4vyRequiredFields> {
  */
 @OptIn(ExperimentalSerializationApi::class)
 object Gr4vyAddressRequiredFieldsSerializer : KSerializer<Gr4vyRequiredFields.Gr4vyAddressRequiredFields> {
-    override val descriptor: SerialDescriptor = object : SerialDescriptor {
-        override val serialName: String = "Gr4vyAddressRequiredFields"
-        override val kind: SerialKind = StructureKind.CLASS
-        override val elementsCount: Int = 0
-        override fun getElementName(index: Int): String = throw UnsupportedOperationException()
-        override fun getElementIndex(name: String): Int = throw UnsupportedOperationException()
-        override fun getElementDescriptor(index: Int): SerialDescriptor = throw UnsupportedOperationException()
-        override fun getElementAnnotations(index: Int): List<Annotation> = emptyList()
-        override fun isElementOptional(index: Int): Boolean = true
-        override val annotations: List<Annotation> = emptyList()
-    }
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("Gr4vyAddressRequiredFields")
     
     override fun serialize(encoder: Encoder, value: Gr4vyRequiredFields.Gr4vyAddressRequiredFields) {
         val jsonEncoder = encoder as? JsonEncoder

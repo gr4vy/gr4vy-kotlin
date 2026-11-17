@@ -8,6 +8,9 @@ plugins {
 }
 
 import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.SourcesJar
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 // Host is set via property below; no SonatypeHost import needed.
 
 // ---- Version helpers ----
@@ -108,20 +111,14 @@ android {
         isCoreLibraryDesugaringEnabled = false
     }
 
-    kotlinOptions {
-        jvmTarget = "11"
-        freeCompilerArgs += listOf(
-            "-opt-in=kotlin.RequiresOptIn",
-            "-Xjsr305=strict",
-            "-Xuse-inline-scopes-numbers"
-        )
-    }
-
     buildFeatures {
         buildConfig = true
         resValues = false
         shaders = false
-        androidResources = true  // Enable resources for Netcetera DS logos
+    }
+
+    androidResources {
+        enable = true  // Enable resources for Netcetera DS logos
     }
 
     packaging {
@@ -152,6 +149,17 @@ android {
                 }
             }
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
+        freeCompilerArgs.addAll(
+            "-opt-in=kotlin.RequiresOptIn",
+            "-Xjsr305=strict",
+            "-Xuse-inline-scopes-numbers"
+        )
     }
 }
 
@@ -199,9 +207,9 @@ mavenPublishing {
     // Publish the Android "release" variant with sources & javadoc jars
     configure(
         AndroidSingleVariantLibrary(
-            variant = "release",
-            sourcesJar = true,
-            publishJavadocJar = true
+            javadocJar = JavadocJar.Javadoc(),
+            sourcesJar = SourcesJar.Sources(),
+            variant = "release"
         )
     )
 

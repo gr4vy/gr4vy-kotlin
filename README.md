@@ -60,7 +60,7 @@ The samples below show how the published SDK artifact is used:
 ### Minimum Requirements
 
 - **Android API 26+** (Android 8.0)
-- **Kotlin 1.8+**
+- **Kotlin 2.3+** (the SDK is built with Kotlin 2.4)
 - **Coroutines support**
 
 ### Gradle
