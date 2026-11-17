@@ -1,20 +1,44 @@
 package com.gr4vy.sdk.services
 
 import android.app.Activity
+import android.app.Dialog
+import android.os.Looper
+import android.view.View
+import android.view.WindowManager
+import android.widget.FrameLayout
 import com.gr4vy.sdk.Gr4vyServer
+import com.gr4vy.sdk.R
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE, sdk = [29])
 class Gr4vySandboxChallengeScreenCaptureTest {
 
-    private fun activity(): Activity = Robolectric.buildActivity(Activity::class.java).get()
+    private fun activity(): Activity = Robolectric.buildActivity(Activity::class.java).setup().get()
+
+    private fun secureDialog(activity: Activity, contentId: Int): Dialog {
+        val content = FrameLayout(activity).apply { addView(View(activity).apply { id = contentId }) }
+        return Dialog(activity).apply {
+            setContentView(content)
+            window!!.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            show()
+        }
+    }
+
+    private fun Dialog.isSecure(): Boolean =
+        (window!!.decorView.layoutParams as WindowManager.LayoutParams).flags and
+            WindowManager.LayoutParams.FLAG_SECURE != 0
+
+    private fun idle() = shadowOf(Looper.getMainLooper()).idle()
 
     @Test
     fun `production never allows capturing the challenge screen`() {
@@ -22,11 +46,20 @@ class Gr4vySandboxChallengeScreenCaptureTest {
     }
 
     @Test
-    fun `sandbox allows capturing the challenge screen, and stopping before starting is safe`() {
-        val capture = Gr4vySandboxChallengeScreenCapture.forServer(Gr4vyServer.SANDBOX, activity())
+    fun `sandbox clears FLAG_SECURE on the challenge window only, and restores it on stop`() {
+        val activity = activity()
+        val challenge = secureDialog(activity, R.id.challenge_ui_cancel)
+        val merchant = secureDialog(activity, View.generateViewId())
+        val capture = Gr4vySandboxChallengeScreenCapture.forServer(Gr4vyServer.SANDBOX, activity)
         assertNotNull(capture)
-        capture!!.stop()
-        capture.start()
+
+        capture!!.start()
+        idle()
+        assertFalse("challenge window should be capturable", challenge.isSecure())
+        assertTrue("merchant window should stay secure", merchant.isSecure())
+
         capture.stop()
+        idle()
+        assertTrue("challenge window should be secure again", challenge.isSecure())
     }
 }
