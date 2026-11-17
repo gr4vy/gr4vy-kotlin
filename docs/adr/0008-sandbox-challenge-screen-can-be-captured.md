@@ -1,0 +1,21 @@
+---
+status: accepted
+date: 2026-11-17
+---
+
+# In sandbox, the 3DS challenge screen can be captured
+
+The 3DS SDK draws its challenge in a full-screen dialog with `FLAG_SECURE`, so screenshots, screen recording and screen mirroring show it blank. That is a PCI requirement for real cardholder data. Merchants asked to mirror and record challenges while testing and demoing, and sandbox only ever sees test cards. So in sandbox the SDK clears `FLAG_SECURE` on the windows a challenge opens, for as long as the challenge runs. Production is unchanged.
+
+The 3DS SDK has no setting for this. Its documented workaround, clearing the flag on the host activity from the app's `ActivityLifecycleCallbacks`, doesn't reach the challenge dialog's own window: we tried it in the client app and the screen stayed blank. Instead, the SDK lists the app's windows with `WindowInspector.getGlobalWindowViews()`, a public API, and clears the flag on any window that appeared after the challenge started.
+
+## Considered options
+
+- **An opt-in flag on `tokenize`.** Rejected. There is no production use for it, and in sandbox the default should help merchants test. It would also be one more option to document and keep forever.
+- **Leaving it to merchants.** Rejected. The workaround the 3DS SDK documents doesn't work with this SDK.
+
+## Consequences
+
+- This needs Android 10 (API 29) or newer, where `WindowInspector` exists. On older versions, sandbox challenges stay blank.
+- Only windows opened after the challenge started are touched, so a merchant's own `FLAG_SECURE` windows stay secure.
+- If a future 3DS SDK release draws the challenge differently, this could stop working, in sandbox only. QA would notice: the challenge screenshot comes out black.

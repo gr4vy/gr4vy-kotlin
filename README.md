@@ -569,6 +569,10 @@ The SDK provides support for 3D Secure (3DS) authentication, and handles flows a
 
 The authentication result includes a transaction status code that indicates the outcome.
 
+### Screenshots and screen sharing
+
+In production, the challenge screen can't be captured: screenshots, screen recording and screen mirroring show it blank, as PCI requires. In sandbox, which only uses test cards, the SDK lets the challenge screen be captured, so you can record, demo and mirror test payments. This needs Android 10 or newer; on older versions the challenge screen stays blank in sandbox too.
+
 ### Customizing the 3DS UI
 
 You can customize the appearance of the 3DS challenge screen to match your app's design. The SDK supports separate customizations for light and dark modes.
