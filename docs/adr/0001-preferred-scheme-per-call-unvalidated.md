@@ -1,5 +1,6 @@
 ---
 status: accepted
+date: 2026-10-08
 ---
 
 # Preferred scheme is a per-call `tokenize` argument, and the SDK doesn't validate it

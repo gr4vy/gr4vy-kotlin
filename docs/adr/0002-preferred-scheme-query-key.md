@@ -1,5 +1,6 @@
 ---
 status: accepted
+date: 2026-10-08
 ---
 
 # The preferred scheme is sent as the `preferredScheme` query key
