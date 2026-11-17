@@ -33,7 +33,7 @@ Run it for every PR that changes request building, 3DS, tokenization, or the pub
 
 Test cards are the Netcetera ones built into the client app. Expiry `01/30`. Frictionless cards use CVV `123`, challenge cards use `456`. For anything about scheme choice, also use the co-badged sandbox card `4035501000000008`: Visa as the primary scheme, with Cartes Bancaires (`carte-bancaire`) as an additional scheme. Core API's `test_cards.py` lists more, for example Visa with eftpos Australia.
 
-| # | Case | Card / currency | Expect on the wire | Expect in result |
+| # | Case | Card / currency | Expect on the wire | Expect in the client app's result JSON |
 |---|---|---|---|---|
 | 1 | Frictionless | Visa frictionless, GBP | `GET …/three-d-secure-version` 200, `POST …/three-d-secure-authenticate` 200 | `attempted: true`, `type: frictionless`, `transaction_status: Y` |
 | 2 | Not set up for 3DS | Visa frictionless, EUR | version 204, no authenticate call | `attempted: false`, `tokenized: true`, no error |
