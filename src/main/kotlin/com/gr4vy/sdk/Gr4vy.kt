@@ -473,7 +473,7 @@ class Gr4vy @Throws(Gr4vyError::class) constructor(
      *             activity = this@PaymentActivity,
      *             sdkMaxTimeoutMinutes = 5,
      *             authenticate = true,
-     *             preferredScheme = "cartes-bancaires" // optional, for co-badged cards
+     *             preferredScheme = "carte-bancaire" // optional, for co-badged cards
      *         )
      *         
      *         if (result.tokenized) {
@@ -504,7 +504,7 @@ class Gr4vy @Throws(Gr4vyError::class) constructor(
      * @param sdkMaxTimeoutMinutes Maximum time for 3DS authentication in minutes (default: 5)
      * @param authenticate Controls if 3DS authentication should be attempted (default: false)
      * @param uiCustomization Optional UI customization for the 3DS challenge screen (supports light/dark themes)
-     * @param preferredScheme Optional card scheme the cardholder selected on a co-badged card (e.g. "cartes-bancaires"). 3DS runs on this scheme; if it's invalid, Gr4vy falls back to the card's main scheme. If the scheme isn't set up for 3DS, the result has `authentication.attempted == false`. Omit or pass null to keep the default behaviour. Only used when `authenticate` is true.
+     * @param preferredScheme Optional Gr4vy scheme ID the cardholder chose on a co-badged card (e.g. "carte-bancaire"). 3DS runs on this scheme. If the card doesn't carry it, Gr4vy uses the card's primary scheme. If the scheme isn't set up for 3DS, or isn't a Gr4vy scheme ID, the result has `authentication.attempted == false`. Omit or pass null to keep the default behaviour. Only used when `authenticate` is true.
      *
      * @return [Gr4vyTokenizeResult] containing tokenization status and authentication details
      *
@@ -577,7 +577,7 @@ class Gr4vy @Throws(Gr4vyError::class) constructor(
      * @param sdkMaxTimeoutMinutes Maximum time for 3DS authentication in minutes (default: 5)
      * @param authenticate Controls if 3DS authentication should be attempted (default: false)
      * @param uiCustomization Optional UI customization for the 3DS challenge screen (supports light/dark themes)
-     * @param preferredScheme Optional card scheme the cardholder selected on a co-badged card (e.g. "cartes-bancaires"). 3DS runs on this scheme; if it's invalid, Gr4vy falls back to the card's main scheme. If the scheme isn't set up for 3DS, the result has `authentication.attempted == false`. Omit or pass null to keep the default behaviour. Only used when `authenticate` is true.
+     * @param preferredScheme Optional Gr4vy scheme ID the cardholder chose on a co-badged card (e.g. "carte-bancaire"). 3DS runs on this scheme. If the card doesn't carry it, Gr4vy uses the card's primary scheme. If the scheme isn't set up for 3DS, or isn't a Gr4vy scheme ID, the result has `authentication.attempted == false`. Omit or pass null to keep the default behaviour. Only used when `authenticate` is true.
      * @param completion Result callback with [Gr4vyTokenizeResult] on success or error on failure
      *
      * @see Gr4vyTokenizeResult

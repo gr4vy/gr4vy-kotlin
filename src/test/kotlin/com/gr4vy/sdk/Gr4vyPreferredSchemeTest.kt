@@ -180,7 +180,7 @@ class Gr4vyPreferredSchemeTest {
     // MARK: - Public suspend overload
 
     /**
-     * Proves the public 204 contract (tokenized, attempted = false, no error), that `preferred_scheme` was sent, and,
+     * Proves the public 204 contract (tokenized, attempted = false, no error), that `preferredScheme` was sent, and,
      * through the logs, that the explicit 204 branch ran rather than the generic versioning-failure path.
      * The primary regression guard for the explicit 204 handling is
      * `Gr4vyCheckoutSessionServiceTest.callVersioning returns null on empty body`.
@@ -192,7 +192,7 @@ class Gr4vyPreferredSchemeTest {
             cardData = cardData(),
             activity = activity(),
             authenticate = true,
-            preferredScheme = "cartes-bancaires"
+            preferredScheme = "carte-bancaire"
         )
 
         assertTrue(result.tokenized)
@@ -208,7 +208,7 @@ class Gr4vyPreferredSchemeTest {
         assertTrue(requests[0].url.encodedPath.endsWith("/fields"))
         assertEquals("GET", requests[1].method)
         assertTrue(requests[1].url.encodedPath.endsWith("/three-d-secure-version"))
-        assertEquals("cartes-bancaires", requests[1].url.queryParameter("preferred_scheme"))
+        assertEquals("carte-bancaire", requests[1].url.queryParameter("preferredScheme"))
 
         assertTrue("Explicit 204 branch should log at debug level", loggedNoContent())
         assertFalse("204 must not go through the versioning-failure path", loggedVersioningFailed())
@@ -241,8 +241,8 @@ class Gr4vyPreferredSchemeTest {
         )
 
         assertEquals(2, requests.size)
-        assertEquals("preferred_scheme=cartes+bancaires%26x%3D1", requests[1].url.encodedQuery)
-        assertEquals("cartes bancaires&x=1", requests[1].url.queryParameter("preferred_scheme"))
+        assertEquals("preferredScheme=cartes+bancaires%26x%3D1", requests[1].url.encodedQuery)
+        assertEquals("cartes bancaires&x=1", requests[1].url.queryParameter("preferredScheme"))
         assertEquals(1, requests[1].url.querySize)
     }
 
@@ -255,14 +255,14 @@ class Gr4vyPreferredSchemeTest {
             cardData = cardData(),
             activity = activity(),
             authenticate = true,
-            preferredScheme = "cartes-bancaires"
+            preferredScheme = "carte-bancaire"
         )
 
         assertTrue(result.tokenized)
         assertFalse(result.authentication!!.attempted)
         assertNull(result.authentication!!.type)
         assertEquals(2, requests.size)
-        assertEquals("cartes-bancaires", requests[1].url.queryParameter("preferred_scheme"))
+        assertEquals("carte-bancaire", requests[1].url.queryParameter("preferredScheme"))
         assertTrue("A 500 should go through the versioning-failure path", loggedVersioningFailed())
         assertFalse(loggedNoContent())
     }
@@ -276,7 +276,7 @@ class Gr4vyPreferredSchemeTest {
             cardData = cardData(),
             activity = activity(),
             authenticate = true,
-            preferredScheme = "cartes-bancaires"
+            preferredScheme = "carte-bancaire"
         )
 
         assertTrue(result.tokenized)
@@ -295,7 +295,7 @@ class Gr4vyPreferredSchemeTest {
             cardData = cardData(),
             activity = activity(),
             authenticate = true,
-            preferredScheme = "cartes-bancaires"
+            preferredScheme = "carte-bancaire"
         )
 
         assertTrue(result.tokenized)
@@ -321,7 +321,7 @@ class Gr4vyPreferredSchemeTest {
                 cardData = cardData(),
                 activity = activity(),
                 authenticate = true,
-                preferredScheme = "cartes-bancaires"
+                preferredScheme = "carte-bancaire"
             )
         }
 
@@ -332,7 +332,7 @@ class Gr4vyPreferredSchemeTest {
         assertTrue(sdkLogs().any { it.type == Log.DEBUG && it.msg == "Step 3: Performing 3DS authentication" })
         assertFalse(loggedNoContent())
         assertFalse(loggedVersioningFailed())
-        assertEquals("cartes-bancaires", requests[1].url.queryParameter("preferred_scheme"))
+        assertEquals("carte-bancaire", requests[1].url.queryParameter("preferredScheme"))
     }
 
     @Test
@@ -342,7 +342,7 @@ class Gr4vyPreferredSchemeTest {
             cardData = cardData(),
             activity = activity(),
             authenticate = false,
-            preferredScheme = "cartes-bancaires"
+            preferredScheme = "carte-bancaire"
         )
 
         assertTrue(result.tokenized)
@@ -383,7 +383,7 @@ class Gr4vyPreferredSchemeTest {
         assertEquals(1, url.querySize)
         assertNull(url.encodedFragment)
         assertTrue("Query must be printable ASCII: ${url.encodedQuery}", url.encodedQuery!!.all { it.code in 0x21..0x7E })
-        assertEquals(value, url.queryParameter("preferred_scheme"))
+        assertEquals(value, url.queryParameter("preferredScheme"))
     }
 
     @Test
@@ -397,7 +397,7 @@ class Gr4vyPreferredSchemeTest {
         )
 
         assertEquals(unattempted, result)
-        assertEquals("preferred_scheme=Not-A-Real-Scheme", requests[1].url.encodedQuery)
+        assertEquals("preferredScheme=Not-A-Real-Scheme", requests[1].url.encodedQuery)
     }
 
     @Test
@@ -405,12 +405,12 @@ class Gr4vyPreferredSchemeTest {
         val gr4vy = gr4vy(noContentClient())
         val activity = activity()
 
-        gr4vy.tokenize(checkoutSessionId = "session_123", cardData = cardData(), activity = activity, authenticate = true, preferredScheme = "cartes-bancaires")
+        gr4vy.tokenize(checkoutSessionId = "session_123", cardData = cardData(), activity = activity, authenticate = true, preferredScheme = "carte-bancaire")
         gr4vy.tokenize(checkoutSessionId = "session_123", cardData = cardData(), activity = activity, authenticate = true)
         gr4vy.tokenize(checkoutSessionId = "session_123", cardData = cardData(), activity = activity, authenticate = true, preferredScheme = "visa")
 
         val versioning = versioningRequests()
-        assertEquals(listOf("cartes-bancaires", null, "visa"), versioning.map { it.url.queryParameter("preferred_scheme") })
+        assertEquals(listOf("carte-bancaire", null, "visa"), versioning.map { it.url.queryParameter("preferredScheme") })
         assertEquals(0, versioning[1].url.querySize)
     }
 
@@ -421,16 +421,16 @@ class Gr4vyPreferredSchemeTest {
             cardData = cardData(),
             activity = activity(),
             authenticate = true,
-            preferredScheme = "cartes-bancaires"
+            preferredScheme = "carte-bancaire"
         )
 
         val fields = requests.single { it.url.encodedPath.endsWith("/fields") }
         assertEquals("PUT", fields.method)
         assertNull(fields.url.encodedQuery)
         val body = Buffer().also { fields.body!!.writeTo(it) }.readUtf8()
-        assertFalse(body.contains("preferred_scheme"))
         assertFalse(body.contains("preferredScheme"))
-        assertFalse(body.contains("cartes-bancaires"))
+        assertFalse(body.contains("preferredScheme"))
+        assertFalse(body.contains("carte-bancaire"))
     }
 
     @Test
@@ -442,7 +442,7 @@ class Gr4vyPreferredSchemeTest {
             cardData = cardData(),
             activity = activity(),
             authenticate = true,
-            preferredScheme = "cartes-bancaires"
+            preferredScheme = "carte-bancaire"
         )
 
         assertEquals(unattempted, result)
@@ -451,10 +451,10 @@ class Gr4vyPreferredSchemeTest {
 
     @Test
     fun `positional call takes preferredScheme after uiCustomization`() = runTest {
-        val result = gr4vy(noContentClient()).tokenize("session_123", cardData(), activity(), 5, true, null, "cartes-bancaires")
+        val result = gr4vy(noContentClient()).tokenize("session_123", cardData(), activity(), 5, true, null, "carte-bancaire")
 
         assertEquals(unattempted, result)
-        assertEquals("cartes-bancaires", requests[1].url.queryParameter("preferred_scheme"))
+        assertEquals("carte-bancaire", requests[1].url.queryParameter("preferredScheme"))
     }
 
     @Test
@@ -483,12 +483,12 @@ class Gr4vyPreferredSchemeTest {
             cardData = cardData(),
             activity = activity(),
             authenticate = true,
-            preferredScheme = "cartes-bancaires"
+            preferredScheme = "carte-bancaire"
         )
 
         assertEquals(unattempted, result)
         assertEquals(
-            "https://api.sandbox.acme.gr4vy.app/checkout/sessions/session_123/three-d-secure-version?preferred_scheme=cartes-bancaires",
+            "https://api.sandbox.acme.gr4vy.app/checkout/sessions/session_123/three-d-secure-version?preferredScheme=carte-bancaire",
             legacy.urls.last()
         )
         assertTrue(loggedNoContent())
@@ -506,14 +506,14 @@ class Gr4vyPreferredSchemeTest {
                 cardData = cardData(),
                 activity = activity(),
                 authenticate = true,
-                preferredScheme = "cartes-bancaires"
+                preferredScheme = "carte-bancaire"
             ) { done(it) }
         }.getOrThrow()
 
         assertTrue(result.tokenized)
         assertFalse(result.authentication!!.attempted)
         assertEquals(2, requests.size)
-        assertEquals("cartes-bancaires", requests[1].url.queryParameter("preferred_scheme"))
+        assertEquals("carte-bancaire", requests[1].url.queryParameter("preferredScheme"))
     }
 
     @Test
@@ -540,11 +540,11 @@ class Gr4vyPreferredSchemeTest {
         val gr4vy = gr4vy(noContentClient())
 
         val result = awaitCallback { done ->
-            gr4vy.tokenize("session_123", cardData(), activity(), 5, true, null, "cartes-bancaires", done)
+            gr4vy.tokenize("session_123", cardData(), activity(), 5, true, null, "carte-bancaire", done)
         }
 
         assertEquals(unattempted, result.getOrThrow())
-        assertEquals("cartes-bancaires", requests[1].url.queryParameter("preferred_scheme"))
+        assertEquals("carte-bancaire", requests[1].url.queryParameter("preferredScheme"))
     }
 
     // MARK: - Internal 3DS service
@@ -563,12 +563,12 @@ class Gr4vyPreferredSchemeTest {
         val service = threeDSService(noContentClient())
 
         val result = awaitCallback { done ->
-            service.tokenize("session_123", cardData(), activity(), 5, true, null, "cartes-bancaires") { done(it) }
+            service.tokenize("session_123", cardData(), activity(), 5, true, null, "carte-bancaire") { done(it) }
         }.getOrThrow()
 
         assertFalse(result.authentication!!.attempted)
         assertEquals(2, requests.size)
-        assertEquals("cartes-bancaires", requests[1].url.queryParameter("preferred_scheme"))
+        assertEquals("carte-bancaire", requests[1].url.queryParameter("preferredScheme"))
     }
 
     @Test

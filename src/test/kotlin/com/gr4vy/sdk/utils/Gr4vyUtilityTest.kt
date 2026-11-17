@@ -397,15 +397,15 @@ class Gr4vyUtilityTest {
     }
 
     @Test
-    fun `test versioningURL appends preferred_scheme`() {
-        val url = Gr4vyUtility.versioningURL(sandboxSetup, "session_12345", "cartes-bancaires")
+    fun `test versioningURL appends preferredScheme`() {
+        val url = Gr4vyUtility.versioningURL(sandboxSetup, "session_12345", "carte-bancaire")
         
         assertEquals(
-            "https://api.sandbox.acme.gr4vy.app/checkout/sessions/session_12345/three-d-secure-version?preferred_scheme=cartes-bancaires",
+            "https://api.sandbox.acme.gr4vy.app/checkout/sessions/session_12345/three-d-secure-version?preferredScheme=carte-bancaire",
             url.toString()
         )
         assertEquals("/checkout/sessions/session_12345/three-d-secure-version", url.path)
-        assertEquals("preferred_scheme=cartes-bancaires", url.query)
+        assertEquals("preferredScheme=carte-bancaire", url.query)
     }
 
     @Test
@@ -413,7 +413,7 @@ class Gr4vyUtilityTest {
         val original = "cartes bancaires&x=1#y"
         val url = Gr4vyUtility.versioningURL(sandboxSetup, "session_12345", original)
         
-        assertEquals("preferred_scheme=cartes+bancaires%26x%3D1%23y", url.query)
+        assertEquals("preferredScheme=cartes+bancaires%26x%3D1%23y", url.query)
         assertNull("Encoded '#' must not start a fragment", url.ref)
         assertEquals("/checkout/sessions/session_12345/three-d-secure-version", url.path)
         assertEquals(original, URLDecoder.decode(url.query.substringAfter("="), "UTF-8"))
@@ -423,18 +423,18 @@ class Gr4vyUtilityTest {
     fun `test versioningURL encodes non-ASCII preferredScheme as UTF-8`() {
         val url = Gr4vyUtility.versioningURL(sandboxSetup, "session_12345", "\u00e9")
         
-        assertEquals("preferred_scheme=%C3%A9", url.query)
+        assertEquals("preferredScheme=%C3%A9", url.query)
     }
 
     @Test
     fun `test versioningURL with preferredScheme on production`() {
-        val url = Gr4vyUtility.versioningURL(productionSetup, "session_67890", "cartes-bancaires")
+        val url = Gr4vyUtility.versioningURL(productionSetup, "session_67890", "carte-bancaire")
         
         assertEquals("api.acme.gr4vy.app", url.host)
         assertEquals("/checkout/sessions/session_67890/three-d-secure-version", url.path)
-        assertEquals("preferred_scheme=cartes-bancaires", url.query)
+        assertEquals("preferredScheme=carte-bancaire", url.query)
         assertEquals(
-            "https://api.acme.gr4vy.app/checkout/sessions/session_67890/three-d-secure-version?preferred_scheme=cartes-bancaires",
+            "https://api.acme.gr4vy.app/checkout/sessions/session_67890/three-d-secure-version?preferredScheme=carte-bancaire",
             url.toString()
         )
     }
@@ -444,7 +444,7 @@ class Gr4vyUtilityTest {
         // Only null and "" are omitted; no trimming or validation on the client
         val url = Gr4vyUtility.versioningURL(sandboxSetup, "session_12345", "  ")
         
-        assertEquals("preferred_scheme=++", url.query)
+        assertEquals("preferredScheme=++", url.query)
     }
 
     @Test
@@ -452,7 +452,7 @@ class Gr4vyUtilityTest {
         // Form encoding: a literal "+" must be escaped so it is not decoded as a space
         val url = Gr4vyUtility.versioningURL(sandboxSetup, "session_12345", "a+b")
         
-        assertEquals("preferred_scheme=a%2Bb", url.query)
+        assertEquals("preferredScheme=a%2Bb", url.query)
         assertEquals("a+b", URLDecoder.decode(url.query.substringAfter("="), "UTF-8"))
     }
 
@@ -472,7 +472,7 @@ class Gr4vyUtilityTest {
     @Test
     fun `test versioningURL round-trips reserved, percent and non-ASCII preferredScheme`() {
         val values = listOf(
-            "a&preferred_scheme=visa",
+            "a&preferredScheme=visa",
             "a=b",
             "100%",
             "%41",
@@ -484,7 +484,7 @@ class Gr4vyUtilityTest {
             val url = Gr4vyUtility.versioningURL(sandboxSetup, "session_12345", value)
             val query = url.query
 
-            assertTrue("Expected a single preferred_scheme parameter for '$value': $query", query.startsWith("preferred_scheme=") && !query.contains('&'))
+            assertTrue("Expected a single preferredScheme parameter for '$value': $query", query.startsWith("preferredScheme=") && !query.contains('&'))
             assertNull("Encoded value must not start a fragment for '$value'", url.ref)
             assertTrue("Query must be printable ASCII for '$value': $query", query.all { it.code in 0x21..0x7E })
             assertEquals(value, URLDecoder.decode(query.substringAfter("="), "UTF-8"))
@@ -493,11 +493,11 @@ class Gr4vyUtilityTest {
 
     @Test
     fun `test versioningURL sends preferredScheme verbatim without validation`() {
-        // No allowlist, trimming or case folding on the client: Core API falls back for invalid values
+        // No allowlist, trimming or case folding on the client: Core API decides what an unknown value means
         for (value in listOf("VISA", "Cartes-Bancaires", "not-a-real-scheme", "x")) {
             val url = Gr4vyUtility.versioningURL(sandboxSetup, "session_12345", value)
 
-            assertEquals("preferred_scheme=$value", url.query)
+            assertEquals("preferredScheme=$value", url.query)
         }
     }
 

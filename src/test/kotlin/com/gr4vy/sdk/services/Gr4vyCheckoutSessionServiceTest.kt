@@ -111,16 +111,16 @@ class Gr4vyCheckoutSessionServiceTest {
     }
 
     @Test
-    fun `callVersioning appends preferred_scheme`() = runTest {
+    fun `callVersioning appends preferredScheme`() = runTest {
         val mockHttpClient = MockHttpClient()
         mockHttpClient.responseToReturn = """{"directory_server_id":"ds_1","message_version":"2.2.0","api_key":"k"}"""
         val service = Gr4vyCheckoutSessionService(testSetup, false, MockHttpClientFactory(mockHttpClient))
         
-        service.callVersioning("session_123", "cartes-bancaires")
+        service.callVersioning("session_123", "carte-bancaire")
         
         assertTrue(
-            "URL should carry preferred_scheme: ${mockHttpClient.lastUrl}",
-            mockHttpClient.lastUrl.endsWith("/three-d-secure-version?preferred_scheme=cartes-bancaires")
+            "URL should carry preferredScheme: ${mockHttpClient.lastUrl}",
+            mockHttpClient.lastUrl.endsWith("/three-d-secure-version?preferredScheme=carte-bancaire")
         )
     }
 
@@ -146,7 +146,7 @@ class Gr4vyCheckoutSessionServiceTest {
         mockHttpClient.responseToReturn = ""
         val service = Gr4vyCheckoutSessionService(testSetup, false, MockHttpClientFactory(mockHttpClient))
         
-        val response = service.callVersioning("session_123", "cartes-bancaires")
+        val response = service.callVersioning("session_123", "carte-bancaire")
         
         assertNull("Empty body (204) should return null, not throw", response)
     }

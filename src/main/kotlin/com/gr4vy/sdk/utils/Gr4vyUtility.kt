@@ -97,7 +97,7 @@ object Gr4vyUtility {
         val urlString = if (preferredScheme.isNullOrEmpty()) {
             baseUrl
         } else {
-            "$baseUrl?preferred_scheme=${URLEncoder.encode(preferredScheme, "UTF-8")}"
+            "$baseUrl?preferredScheme=${URLEncoder.encode(preferredScheme, "UTF-8")}"
         }
         
         return try {

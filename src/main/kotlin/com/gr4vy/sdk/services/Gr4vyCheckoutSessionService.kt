@@ -145,7 +145,7 @@ class Gr4vyCheckoutSessionService(
      * Call the 3DS versioning endpoint to get configuration for Netcetera SDK.
      *
      * @param preferredScheme Optional card scheme selected by the cardholder on a co-badged card;
-     *   sent as `preferred_scheme` when not null/empty.
+     *   sent as `preferredScheme` when not null/empty.
      * @return The versioning response, or `null` when the endpoint returns 204 No Content
      *   (the card's scheme isn't set up for 3DS).
      */

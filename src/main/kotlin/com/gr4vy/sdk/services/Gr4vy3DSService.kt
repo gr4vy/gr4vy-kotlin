@@ -84,7 +84,7 @@ internal class Gr4vy3DSService(
     /**
      * Main tokenization method with 3DS authentication (suspend version)
      *
-     * @param preferredScheme Optional card scheme selected on a co-badged card, sent as `preferred_scheme`.
+     * @param preferredScheme Optional card scheme selected on a co-badged card, sent as `preferredScheme`.
      *   Only used when `authenticate` is true.
      */
     suspend fun <TRequest : Gr4vyRequest> tokenize(
@@ -116,7 +116,7 @@ internal class Gr4vy3DSService(
     /**
      * Main tokenization method with 3DS authentication (callback version)
      *
-     * @param preferredScheme Optional card scheme selected on a co-badged card, sent as `preferred_scheme`.
+     * @param preferredScheme Optional card scheme selected on a co-badged card, sent as `preferredScheme`.
      *   Only used when `authenticate` is true.
      */
     fun <TRequest : Gr4vyRequest> tokenize(
