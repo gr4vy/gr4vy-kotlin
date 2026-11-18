@@ -2,7 +2,7 @@
 
 What a release of this SDK has to go through before it's merged and tagged. Unit tests and CI prove the code does what the author meant. QA proves it does what a merchant needs, against a real Gr4vy instance, in a real app.
 
-Run it for every PR that changes request building, 3DS, tokenization, or the public API, and for every release. Write the result up in `docs/qa-runs/` (see [the last run](qa-runs/2026-11-17-1.3.0-preferred-scheme.md) for the shape).
+Run it for every PR that changes request building, 3DS, tokenization, or the public API, and for every release that changes SDK code. A release that only changes CI, docs or the version number needs none. Write the result up in `docs/qa-runs/` (see [the last run](qa-runs/2026-11-17-1.3.0-preferred-scheme.md) for the shape).
 
 ## What makes a good QA run
 

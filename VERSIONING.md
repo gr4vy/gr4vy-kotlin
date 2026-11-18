@@ -22,7 +22,7 @@ internal object Version {
 
 - **Maven/Gradle**: Uses `versionName` from build.gradle.kts
 - **Manual Integration**: Uses `Gr4vySDK.version` property
-- **Git Tags**: For version tracking and releases
+- **Git Tags**: Created by the Release workflow for each release
 
 ## Updating the version
 
@@ -37,7 +37,7 @@ This script will:
 - Update the `VERSION` file
 - Update test files that reference the version (if they exist)
 - Update README.md if it contains version references
-- Show you the next steps for building and releasing
+- Show you what to do next (merge, then approve the Release run that CI starts)
 
 ### Option 2: Manual update
 
@@ -45,7 +45,7 @@ This script will:
 2. Update the `VERSION` file to match
 3. Update any test files that reference the version
 4. Test the build: `./gradlew :gr4vy-kotlin:build`
-5. Create a Git tag: `git tag 1.0.1`
+5. Merge; once CI passes, the Release workflow starts, and publishes and tags after a release approver approves it (see RELEASE.md)
 
 ## Version Code Generation
 

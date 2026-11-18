@@ -11,7 +11,9 @@ fi
 NEW_VERSION=$1
 
 # Validate version format (semantic versioning)
-if [[ ! $NEW_VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9\.-]+)?$ ]]; then
+ID='(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)'
+SEMVER="^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-$ID(\.$ID)*)?\$"
+if [[ ! $NEW_VERSION =~ $SEMVER ]]; then
     echo "Error: Version must be in format X.Y.Z or X.Y.Z-label (e.g., 1.0.0 or 1.0.0-beta.1)"
     exit 1
 fi
@@ -75,7 +77,5 @@ echo "- src/main/kotlin/com/gr4vy/sdk/Gr4vySDK.kt"
 echo "- build.gradle.kts"
 echo ""
 echo "Next steps:"
-echo "1. Test the build: ./gradlew build"
-echo "2. Commit changes: git add . && git commit -m \"Bump version to $NEW_VERSION\""
-echo "3. Create Git tag: git tag $NEW_VERSION"
-echo "4. Push changes: git push && git push --tags" 
+echo "1. Commit the bump in a PR and merge it"
+echo "2. Once CI passes on main, approve the Release run it starts (see RELEASE.md)" 
