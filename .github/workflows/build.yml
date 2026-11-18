@@ -5,13 +5,56 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  build:
-    runs-on: ubuntu-26.04
-    
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
     steps:
       - name: Checkout the code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Decide whether anything besides docs changed
+        id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          case "$EVENT" in
+            pull_request) BASE=$PR_BASE ;;
+            push) BASE=$PUSH_BEFORE ;;
+            *) BASE= ;;
+          esac
+          if [ -z "$BASE" ] || [ "$BASE" = 0000000000000000000000000000000000000000 ] \
+            || ! FILES=$(git diff --name-only "$BASE" "$GITHUB_SHA"); then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CODE=$(printf '%s\n' "$FILES" | grep -vE '(^|/)[^/]+\.md$|^docs/|^LICENSE$|^\.github/merge-gate-(authors|protected)\.txt$' | grep -c . || true)
+          printf '%s\n' "$FILES"
+          if [ "$CODE" -gt 0 ]; then echo "code=true" >> "$GITHUB_OUTPUT"; else echo "code=false" >> "$GITHUB_OUTPUT"; fi
+
+  build:
+    needs: [changes]
+    if: needs.changes.outputs.code != 'false'
+    runs-on: ubuntu-26.04
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Gradle Wrapper Validation
         uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
@@ -46,3 +89,40 @@ jobs:
 
       - name: Run Android Lint
         run: ./gradlew lint 
+
+  ci-complete:
+    needs: [changes, build]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all jobs passed
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          CODE: ${{ needs.changes.outputs.code }}
+          BUILD: ${{ needs.build.result }}
+        run: |
+          if [ "$CHANGES" = "success" ] && [ "$CODE" = "false" ] && [ "$BUILD" = "skipped" ]; then
+            echo "Only docs changed; build skipped."
+            exit 0
+          fi
+          if [ "$BUILD" != "success" ]; then
+            echo "changes: $CHANGES, code: $CODE, build: $BUILD"
+            exit 1
+          fi
+
+  notify:
+    needs: [ci-complete]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ci-complete.result != 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack Notification
+        uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661 # v2
+        env:
+          SLACK_USERNAME: Kotlin SDK
+          SLACK_TITLE: Kotlin SDK
+          SLACK_WEBHOOK: ${{ secrets.SLACK_SDK_WEBHOOK_URL }}
+          SLACK_MSG_AUTHOR: gr4vy
+          SLACK_ICON_EMOJI: ":gr4vy-sdk:"
+          SLACK_COLOR: failure
+          SLACK_MESSAGE: "CI failed on main: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          SLACK_FOOTER: ""

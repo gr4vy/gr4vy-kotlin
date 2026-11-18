@@ -12,5 +12,7 @@ Decisions that are hard to reverse, would surprise a new reader, and came out of
 | 2026-10-08 | [0001](0001-preferred-scheme-per-call-unvalidated.md): Preferred scheme is a per-call `tokenize` argument, and the SDK doesn't validate it |
 | 2026-10-08 | [0002](0002-preferred-scheme-query-key.md): The preferred scheme is sent as the `preferredScheme` query key |
 | 2026-11-17 | [0008](0008-sandbox-challenge-screen-can-be-captured.md): In sandbox, the 3DS challenge screen can be captured |
+| 2026-11-18 | [0009](0009-releases-start-after-a-version-bump.md): Releases start after a version bump and wait for approval, and only the approved job publishes and tags |
+| 2026-11-18 | [0010](0010-merge-gate-leaves-trust-boundaries-to-a-person.md): The merge gate approves SDK feature code, and a person reviews the trust boundaries |
 
 New ADRs: next free number, `status` and `date` frontmatter, and the format in the existing files. No customer names or internal links: this repo is public.
