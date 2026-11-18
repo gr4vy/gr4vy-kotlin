@@ -51,8 +51,9 @@ jobs:
             echo "::error::VERSION is '$VERSION', which isn't a semantic version"
             exit 1
           fi
-          if ! grep -qF "const val current = \"$VERSION\"" src/main/kotlin/com/gr4vy/sdk/Version.kt; then
-            echo "::error::Version.kt doesn't say $VERSION. Run ./update_version.sh $VERSION."
+          GRADLE_VERSION=$(grep -oE 'const val current = "[^"]+"' src/main/kotlin/com/gr4vy/sdk/Version.kt | head -1 | cut -d'"' -f2)
+          if [ "$GRADLE_VERSION" != "$VERSION" ]; then
+            echo "::error::Gradle would publish '$GRADLE_VERSION' from Version.kt, but VERSION is $VERSION. Run ./update_version.sh $VERSION."
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
