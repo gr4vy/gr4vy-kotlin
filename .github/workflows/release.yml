@@ -1,17 +1,158 @@
-name: gr4vy-Kotlin SDK release workflow
+name: Release
+
 on:
-  push:
-    tags:
-      - "*"
-  workflow_dispatch:
+  workflow_run: # zizmor: ignore[dangerous-triggers] only pushes to main, never checks out PR code
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
-  release:
-    runs-on: ubuntu-26.04
+  prepare:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_repository.full_name == github.repository))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
-      contents: write
+      contents: read
+      checks: read
+      pull-requests: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      sha: ${{ steps.version.outputs.sha }}
+      release: ${{ steps.version.outputs.release }}
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
-      - name: Checkout the code
+      - name: Check out the commit CI tested
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ env.SHA }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Read the version
+        id: version
+        run: |
+          VERSION=$(tr -d '[:space:]' < VERSION)
+          ID='(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)'
+          SEMVER="^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-$ID(\.$ID)*)?\$"
+          if [[ ! $VERSION =~ $SEMVER ]]; then
+            echo "::error::VERSION is '$VERSION', which isn't a semantic version"
+            exit 1
+          fi
+          if ! grep -qF "const val current = \"$VERSION\"" src/main/kotlin/com/gr4vy/sdk/Version.kt; then
+            echo "::error::Version.kt doesn't say $VERSION. Run ./update_version.sh $VERSION."
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          TAGGED=$(git rev-parse -q --verify "refs/tags/$VERSION^{commit}" || true)
+          if [ -n "$TAGGED" ] && [ "$TAGGED" != "$SHA" ]; then
+            if curl -sf "https://repo1.maven.org/maven2/com/gr4vy/gr4vy-kotlin/$VERSION/gr4vy-kotlin-$VERSION.pom" > /dev/null; then
+              echo "::notice::$VERSION is already released (tagged on $TAGGED). Nothing to release until VERSION is bumped."
+              echo "release=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::error::$VERSION is tagged on $TAGGED but isn't on Maven Central. Bump VERSION, or finish that release by hand."
+            exit 1
+          fi
+          echo "release=true" >> "$GITHUB_OUTPUT"
+
+      - name: Check CI passed on this commit
+        if: steps.version.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RESULT=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/check-runs?check_name=ci-complete" \
+            --jq '[.check_runs[] | select(.app.slug == "github-actions")] | sort_by(.completed_at) | last | .conclusion // "missing"')
+          if [ "$RESULT" != "success" ]; then
+            echo "::error::ci-complete on $SHA is $RESULT. Wait for CI on main to pass."
+            exit 1
+          fi
+
+      - name: List what this release ships
+        if: steps.version.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          PREVIOUS=$(git describe --tags --abbrev=0 "$SHA^" 2>/dev/null || true)
+          RANGE=${PREVIOUS:+$PREVIOUS..}$SHA
+          {
+            echo "## Release $VERSION"
+            echo
+            echo "Commit \`$SHA\`, changes since ${PREVIOUS:-the first commit}."
+            echo
+            echo "| PR | Author | Approved by |"
+            echo "| --- | --- | --- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          for COMMIT in $(git rev-list --first-parent "$RANGE"); do
+            PR=$(gh api "repos/$GITHUB_REPOSITORY/commits/$COMMIT/pulls" --jq '.[0].number // empty')
+            if [ -z "$PR" ]; then
+              echo "| \`${COMMIT:0:7}\` (no PR) | $(git log -1 --format=%an "$COMMIT") | **nobody** |" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+            gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq '"| #\(.number) \(.title | gsub("\\|"; "\\|")) | \(.user.login) "' \
+              | tr -d '\n' >> "$GITHUB_STEP_SUMMARY"
+            APPROVERS=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/reviews" \
+              --jq '[.[] | select(.state == "APPROVED") | .user.login] | unique | join(", ")')
+            echo "| ${APPROVERS:-**nobody**} |" >> "$GITHUB_STEP_SUMMARY"
+          done
+          SENSITIVE=$(git diff --name-only "$RANGE" -- .github build.gradle.kts settings.gradle.kts gradle.properties gradle gradlew gradlew.bat libs src/main/jniLibs src/main/assets consumer-rules.pro proguard-rules.pro scripts update_version.sh)
+          if [ -n "$SENSITIVE" ]; then
+            {
+              echo
+              echo "**Changed paths a person must always review:**"
+              echo
+              echo "$SENSITIVE" | sed 's/^/- `/; s/$/`/'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  request-approval:
+    needs: prepare
+    if: needs.prepare.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Slack Notification
+        uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661 # v2
+        env:
+          SLACK_USERNAME: Kotlin SDK
+          SLACK_TITLE: Kotlin SDK
+          SLACK_WEBHOOK: ${{ secrets.SLACK_SDK_WEBHOOK_URL }}
+          SLACK_MSG_AUTHOR: gr4vy
+          SLACK_ICON_EMOJI: ":gr4vy-sdk:"
+          SLACK_FOOTER: ""
+          SLACK_COLOR: "#F3AB0E"
+          SLACK_MESSAGE: "${{ needs.prepare.outputs.version }} is waiting for release approval: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  release:
+    needs: prepare
+    if: needs.prepare.outputs.release == 'true'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out the release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          persist-credentials: false
 
       - name: Gradle Wrapper Validation
         uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
@@ -25,33 +166,75 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
 
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-      - name: Build Release AAR
+      - name: Build the release AAR
         run: ./gradlew assembleRelease
 
-      - name: Publish to Maven Central (Central Portal)
-        run: ./gradlew publishAndReleaseToMavenCentral --info
+      - name: Publish to Maven Central
         env:
-          # These become Gradle project properties:
+          VERSION: ${{ needs.prepare.outputs.version }}
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.OSSRH_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.OSSRH_PASSWORD }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.JAVA_GPG_SECRET_KEY }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.JAVA_GPG_PASSPHRASE }}
-          
-      - name: Create Draft Release with Artifacts
-        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1
+        run: |
+          if curl -sf "https://repo1.maven.org/maven2/com/gr4vy/gr4vy-kotlin/$VERSION/gr4vy-kotlin-$VERSION.pom" > /dev/null; then
+            echo "$VERSION is already on Maven Central"
+            exit 0
+          fi
+          ./gradlew publishAndReleaseToMavenCentral
+
+      - name: Get a release token from Octo STS
+        id: octo-sts
+        uses: octo-sts/action@f603d3be9d8dd9871a265776e625a27b00effe05 # v1.1.1
         with:
-          artifacts: "build/outputs/aar/*.aar"
-          draft: true
-          token: ${{ secrets.GITHUB_TOKEN }} 
+          scope: gr4vy
+          identity: gr4vy-kotlin-release
+
+      - name: Tag and publish the GitHub release
+        env:
+          GH_TOKEN: ${{ steps.octo-sts.outputs.token }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          SHA: ${{ needs.prepare.outputs.sha }}
+        run: |
+          if ! TAGGED=$(gh api "repos/$GITHUB_REPOSITORY/commits/refs/tags/$VERSION" --jq '.sha' 2>/dev/null); then
+            TAGGED=""
+          fi
+          if [ -z "$TAGGED" ]; then
+            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$VERSION" -f sha="$SHA" --silent
+          elif [ "$TAGGED" != "$SHA" ]; then
+            echo "::error::$VERSION is already tagged on $TAGGED"
+            exit 1
+          fi
+          if DRAFT=$(gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft 2>/dev/null); then
+            if [ "$DRAFT" = "false" ]; then
+              echo "Release $VERSION already exists"
+              exit 0
+            fi
+          else
+            PRERELEASE=()
+            if [[ $VERSION == *-* ]]; then PRERELEASE=(--prerelease); fi
+            gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" --verify-tag --draft \
+              --title "$VERSION" --generate-notes "${PRERELEASE[@]}"
+          fi
+          gh release upload "$VERSION" build/outputs/aar/*.aar --repo "$GITHUB_REPOSITORY" --clobber
+          gh release edit "$VERSION" --repo "$GITHUB_REPOSITORY" --draft=false
+
+  notify:
+    needs: [prepare, release]
+    if: always() && (needs.prepare.result == 'failure' || needs.prepare.outputs.release == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Slack Notification
+        uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661 # v2
+        env:
+          SLACK_USERNAME: Kotlin SDK
+          SLACK_TITLE: Kotlin SDK
+          SLACK_WEBHOOK: ${{ secrets.SLACK_SDK_WEBHOOK_URL }}
+          SLACK_MSG_AUTHOR: gr4vy
+          SLACK_ICON_EMOJI: ":gr4vy-sdk:"
+          SLACK_FOOTER: ""
+          SLACK_COLOR: "${{ needs.release.result == 'success' && 'success' || 'failure' }}"
+          SLACK_MESSAGE_ON_SUCCESS: "${{ needs.prepare.outputs.version }} is released: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ needs.prepare.outputs.version }}"
+          SLACK_MESSAGE_ON_FAILURE: "Release ${{ needs.prepare.outputs.version || 'from main' }} failed or was rejected: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

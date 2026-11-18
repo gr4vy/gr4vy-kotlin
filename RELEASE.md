@@ -1,121 +1,47 @@
-# How to Release Gr4vy Kotlin SDK
+# Releasing the Gr4vy Kotlin SDK
 
-This guide outlines the process for releasing a new version of the Gr4vy Kotlin SDK.
+Merchants install this SDK from Maven Central as `com.gr4vy:gr4vy-kotlin`. A release publishes it there, then tags the commit and creates the GitHub release. Only the Release workflow does this, and only after a release approver approves it. Why: [ADR 0009](docs/adr/0009-releases-start-after-a-version-bump.md).
 
-## Overview
-
-The release process is **mostly automated** via GitHub Actions. The workflow is triggered when you push a Git tag, and it handles building, testing, and creating a draft GitHub release.
-
-## Release Process
-
-### 1. Prepare the Release
-
-#### Update Version
-Run the version update script with your desired version:
+## 1. Bump the version in a PR
 
 ```bash
-./update_version.sh 1.0.0-beta.1
+./update_version.sh 1.3.1
 ```
 
-This script automatically updates:
-- `VERSION` file
-- `src/main/kotlin/com/gr4vy/sdk/Version.kt`
-- `src/test/kotlin/com/gr4vy/sdk/SimpleTest.kt`
-- `src/test/kotlin/com/gr4vy/sdk/VersionTest.kt`
-- `README.md` (all dependency examples)
+This updates `VERSION`, `Version.kt`, the version tests and the README examples. Commit it in any PR, a feature PR or a small one of its own, and merge it. Merging starts a release that waits for approval; nothing ships until someone approves it. If the release changes SDK code, run [QA](docs/QA.md) first and write it up in `docs/qa-runs/`. A release that only changes CI, docs or the version number needs none.
 
-#### Verify Updates
-Make sure all files were updated correctly:
-- Check that tests pass: `./gradlew test`
-- Verify the version appears correctly in all updated files
-- Review the README to ensure dependency examples show the new version
+Use semantic versioning: `1.3.1` for a fix, `1.4.0` for a feature, `2.0.0` for a breaking change, and `1.4.0-beta.1` for a pre-release.
 
-### 2. Test the Release Build (Optional)
+## 2. The Release workflow starts by itself
 
-You can optionally test the release build locally using the release script:
+When CI passes on `main`, the Release workflow starts for that exact commit. If `VERSION` is already released, it stops there with nothing to do, which is what happens on every merge that doesn't bump the version. Otherwise its first job checks, without any secrets, that:
 
-```bash
-./scripts/release-build.sh
-```
+- `VERSION` is a semantic version and `Version.kt` matches it
+- that version isn't tagged yet (or is tagged on this exact commit, when re-running)
+- `ci-complete` passed on this commit
 
-This script:
-- Cleans previous builds
-- Runs debug unit tests
-- Builds the release AAR with ProGuard optimization
-- Publishes to local Maven repository
-- Verifies the build output
+It then lists every PR since the last release, with its author and who approved it, and any change to paths a person must always review. Read that list in the run's summary.
 
-**Note:** This step is optional since the GitHub workflow will also run tests.
+You can also start it by hand on `main` (**Actions → Release → Run workflow**), for example to retry.
 
-### 3. Commit and Tag
+## 3. Approve it
 
-#### Commit Your Changes
-```bash
-git add .
-git commit -m "Bump version to 1.0.0-beta.1"
-```
+A Slack notice says the version is waiting for release approval, with a link to the run. The `release` job waits in the `release` environment until a release approver approves it. As in Gr4vy's server SDKs, the approvers are a short list in the environment's settings, and they may approve a run their own merge started; anyone else's release waits for one of them. Approve only if you've read the list and everything in it should ship.
 
-#### Create and Push Git Tag
-```bash
-git tag 1.0.0-beta.1
-git push origin main
-git push origin 1.0.0-beta.1
-```
+Once approved, the job builds the AAR, publishes to Maven Central (skipped if that version is already there), then gets a short-lived token from Octo STS, tags the commit and publishes the GitHub release with the AAR and generated notes. Releases are immutable: the tag can't be moved or deleted afterwards. Slack says when it's released, or that it failed or was rejected.
 
-**⚠️ Important:** Pushing the tag is what triggers the automated release workflow!
+## If something goes wrong
 
-### 4. Automated Release Workflow
+- **A check fails:** fix it on `main`; the next green CI run starts the release again, or run it by hand.
+- **The run fails after approval:** run it again. It skips whatever already happened, including a version that already reached Maven Central.
+- **Maven Central rejects the upload** (for example, the namespace's monthly limit): nothing is tagged. Run it again once Central accepts uploads.
+- **A bad release went out:** Maven Central versions can't be replaced or deleted, and immutable releases forbid moving the tag. Fix forward with a new patch version.
 
-Once you push the tag, GitHub Actions automatically:
+## Repo settings this relies on
 
-1. **Triggers the Release Workflow** (`.github/workflows/release.yml`)
-2. **Sets up the build environment** (JDK 17, Android SDK, Gradle cache)
-3. **Validates Gradle wrapper**
-4. **Runs tests** (`./gradlew test`)
-5. **Builds release AAR** (`./gradlew assembleRelease`)
-6. **Publishes to Maven Central** (`./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository`)
-7. **Creates a draft GitHub release** with the built AAR attached
-
-### 5. Finalize the Release
-
-1. **Go to GitHub Releases page**: `https://github.com/gr4vy/gr4vy-kotlin/releases`
-2. **Find your draft release** (it will be marked as "Draft")
-3. **Edit the release notes**:
-   - Add a description of what's new
-   - List breaking changes (if any)
-   - Include any important notes for developers
-4. **Publish the release** (remove "Draft" status)
-
-## Release Workflow Details
-
-### What Triggers a Release?
-- Pushing a Git tag matching any pattern 
-
-### What Gets Built?
-- Release AAR with ProGuard optimization
-- All artifacts are attached to the GitHub release
-
-### Where Are Releases Published?
-- **GitHub Releases**: Draft release with AAR attached
-- **Maven Central**: Automatically published to Maven Central via Sonatype
-
-## Version Naming Convention
-
-Follow semantic versioning with optional pre-release labels:
-- `1.0.0` - Stable release
-- `1.0.0-beta.1` - Beta release
-- `1.0.1` - Patch release
-
-## Rollback Process
-
-If you need to rollback a release:
-
-1. **Delete the problematic tag**:
-   ```bash
-   git tag -d 1.0.0-beta.1
-   git push origin --delete 1.0.0-beta.1
-   ```
-
-2. **Delete the GitHub release** (if already published)
-
-3. **Fix the issues and create a new patch release**
+- A `release` environment that only `main` can deploy to, with a short list of required reviewers, who may approve their own runs. It holds the Maven Central token and signing key: `OSSRH_USERNAME`, `OSSRH_PASSWORD`, `JAVA_GPG_SECRET_KEY`, `JAVA_GPG_PASSPHRASE`. No other workflow or branch can read them.
+- The `gr4vy-kotlin-release` Octo STS policy in the org's `.github` repo, which gives a `contents: write` token on this repo only to `release.yml` on `main`, running in the `release` environment. The Octo STS App must have access to this repo.
+- A tag ruleset on all tags that blocks creation, update and deletion, with only the Octo STS App able to bypass it.
+- Immutable releases turned on.
+- `ci-complete` as the required status check on `main`.
+- This repo on the `SLACK_SDK_WEBHOOK_URL` org secret's repository list, for the Slack notices.
