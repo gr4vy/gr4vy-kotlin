@@ -120,7 +120,7 @@ jobs:
             echo "| ${APPROVERS:-**nobody**} |" >> "$GITHUB_STEP_SUMMARY"
           done
           mapfile -t PROTECTED < <(grep -vE '^[[:space:]]*(#|$)' .github/merge-gate-protected.txt)
-          SENSITIVE=$(git diff --name-only "$BASE" "$SHA" -- .github "${PROTECTED[@]}")
+          SENSITIVE=$(git diff --name-only "$BASE" "$SHA" -- .github "${PROTECTED[@]/%/*}")
           if [ -n "$SENSITIVE" ]; then
             {
               echo
