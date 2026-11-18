@@ -67,6 +67,10 @@ jobs:
             echo "::error::$VERSION is tagged on $TAGGED but isn't on Maven Central. Bump VERSION, or finish that release by hand."
             exit 1
           fi
+          if [ -z "$TAGGED" ] && curl -sf "https://repo1.maven.org/maven2/com/gr4vy/gr4vy-kotlin/$VERSION/gr4vy-kotlin-$VERSION.pom" > /dev/null; then
+            echo "::error::$VERSION is on Maven Central but not tagged. Re-run the failed jobs of the run that published it, so it tags the commit it built."
+            exit 1
+          fi
           echo "release=true" >> "$GITHUB_OUTPUT"
 
       - name: Check CI passed on this commit
@@ -89,6 +93,7 @@ jobs:
         run: |
           PREVIOUS=$(git describe --tags --abbrev=0 "$SHA^" 2>/dev/null || true)
           RANGE=${PREVIOUS:+$PREVIOUS..}$SHA
+          BASE=${PREVIOUS:-$(git hash-object -t tree /dev/null)}
           {
             echo "## Release $VERSION"
             echo
@@ -109,7 +114,8 @@ jobs:
               --jq '[.[] | select(.state == "APPROVED") | .user.login] | unique | join(", ")')
             echo "| ${APPROVERS:-**nobody**} |" >> "$GITHUB_STEP_SUMMARY"
           done
-          SENSITIVE=$(git diff --name-only "$RANGE" -- .github build.gradle.kts settings.gradle.kts gradle.properties gradle gradlew gradlew.bat libs src/main/jniLibs src/main/assets consumer-rules.pro proguard-rules.pro scripts update_version.sh)
+          mapfile -t PROTECTED < <(grep -vE '^[[:space:]]*(#|$)' .github/merge-gate-protected.txt)
+          SENSITIVE=$(git diff --name-only "$BASE" "$SHA" -- .github "${PROTECTED[@]}")
           if [ -n "$SENSITIVE" ]; then
             {
               echo
