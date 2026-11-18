@@ -16,7 +16,7 @@ internal class Gr4vySandboxChallengeScreenCapture private constructor(
     private var stopped = false
 
     override fun onFragmentStarted(fm: FragmentManager, f: Fragment) {
-        if (f is DialogFragment && f.javaClass.name.startsWith(THREE_DS_SDK_PACKAGE)) {
+        if (!stopped && f is DialogFragment && f.javaClass.name.startsWith(THREE_DS_SDK_PACKAGE)) {
             f.dialog?.window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
         }
     }

@@ -69,6 +69,18 @@ class Gr4vySandboxChallengeScreenCaptureTest {
     }
 
     @Test
+    fun `a callback still in flight after stop leaves the dialog secure`() {
+        val activity = activity()
+        val capture = Gr4vySandboxChallengeScreenCapture.forServer(Gr4vyServer.SANDBOX, activity)!!
+        val challenge = activity.show(FakeChallengeDialogFragment())
+        capture.stop()
+
+        capture.onFragmentStarted(activity.fragmentManager, challenge)
+
+        assertTrue(challenge.isSecure())
+    }
+
+    @Test
     fun `start after stop does nothing`() {
         val activity = activity()
         val capture = Gr4vySandboxChallengeScreenCapture.forServer(Gr4vyServer.SANDBOX, activity)!!
