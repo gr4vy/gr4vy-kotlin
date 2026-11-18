@@ -473,7 +473,6 @@ internal class Gr4vy3DSService(
         val challengeCompleted = AtomicBoolean(false)
         val screenCapture = Gr4vySandboxChallengeScreenCapture.forServer(server, activity)
 
-        // Stops sandbox screen capture, and returns true only for the first terminal event.
         fun finishChallenge(): Boolean {
             screenCapture?.stop()
             return !challengeCompleted.getAndSet(true)
