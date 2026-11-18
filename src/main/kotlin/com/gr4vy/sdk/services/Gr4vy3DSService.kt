@@ -471,10 +471,16 @@ internal class Gr4vy3DSService(
         } ?: Gr4vyLogger.warn("Challenge acsSignedContent is null")
         
         val challengeCompleted = AtomicBoolean(false)
+        val screenCapture = Gr4vySandboxChallengeScreenCapture.forServer(server, activity)
+
+        fun finishChallenge(): Boolean {
+            screenCapture?.stop()
+            return !challengeCompleted.getAndSet(true)
+        }
         
         val challengeStatusReceiver = object : ChallengeStatusReceiver {
             override fun completed(completionEvent: CompletionEvent) {
-                if (!challengeCompleted.getAndSet(true)) {
+                if (finishChallenge()) {
                     val status = completionEvent.transactionStatus
                     val transactionId = completionEvent.sdkTransactionID
                     
@@ -494,7 +500,7 @@ internal class Gr4vy3DSService(
             }
             
             override fun cancelled() {
-                if (!challengeCompleted.getAndSet(true)) {
+                if (finishChallenge()) {
                     Gr4vyLogger.debug("Challenge cancelled by user")
                     continuation.resume(
                         ChallengeResult(
@@ -508,7 +514,7 @@ internal class Gr4vy3DSService(
             }
             
             override fun timedout() {
-                if (!challengeCompleted.getAndSet(true)) {
+                if (finishChallenge()) {
                     Gr4vyLogger.error("Challenge timed out")
                     continuation.resume(
                         ChallengeResult(
@@ -522,7 +528,7 @@ internal class Gr4vy3DSService(
             }
             
             override fun protocolError(protocolErrorEvent: ProtocolErrorEvent) {
-                if (!challengeCompleted.getAndSet(true)) {
+                if (finishChallenge()) {
                     val msg = protocolErrorEvent.errorMessage
                     val desc = msg.getErrorDescription()
                     val code = msg.getErrorCode()
@@ -536,7 +542,7 @@ internal class Gr4vy3DSService(
             }
             
             override fun runtimeError(runtimeErrorEvent: RuntimeErrorEvent) {
-                if (!challengeCompleted.getAndSet(true)) {
+                if (finishChallenge()) {
                     val message = runtimeErrorEvent.errorMessage
                     val code = runtimeErrorEvent.errorCode
                     
@@ -560,6 +566,7 @@ internal class Gr4vy3DSService(
                 }
                 
                 // Start challenge (will automatically manage progress view)
+                screenCapture?.start()
                 transaction.doChallenge(
                     activity,
                     challengeParameters,
@@ -568,7 +575,7 @@ internal class Gr4vy3DSService(
                 )
                 
             } catch (e: Exception) {
-                if (!challengeCompleted.getAndSet(true)) {
+                if (finishChallenge()) {
                     Gr4vyLogger.error("Failed to start challenge: ${e.message}")
                     continuation.resumeWithException(
                         Gr4vyError.ThreeDSError("Failed to start challenge: ${e.message}")
@@ -578,7 +585,7 @@ internal class Gr4vy3DSService(
         }
         
         continuation.invokeOnCancellation {
-            challengeCompleted.set(true)
+            finishChallenge()
             Gr4vyLogger.debug("Challenge cancelled")
         }
     }

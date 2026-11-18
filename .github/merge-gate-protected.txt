@@ -19,6 +19,7 @@ src/main/kotlin/com/gr4vy/sdk/utils/Gr4vyUtility.kt
 src/main/kotlin/com/gr4vy/sdk/models/Gr4vySetup.kt
 src/main/kotlin/com/gr4vy/sdk/http/Gr4vyHttpClient.kt
 src/main/kotlin/com/gr4vy/sdk/utils/Gr4vyLogger.kt
-# 3DS trust: directory-server certificates, the 3DS SDK's bundled assets, and which certificates sandbox uses
+# 3DS trust: directory-server certificates, the 3DS SDK's bundled assets, which certificates sandbox uses, and when the challenge screen can be captured
 src/main/assets/
 src/main/kotlin/com/gr4vy/sdk/services/Gr4vyTestCertificateConfiguration.kt
+src/main/kotlin/com/gr4vy/sdk/services/Gr4vySandboxChallengeScreenCapture.kt
