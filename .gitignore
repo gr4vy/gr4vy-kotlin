@@ -102,3 +102,6 @@ Desktop.ini
 # IDEs
 .vscode/
 .fleet/
+
+# Python
+__pycache__/
