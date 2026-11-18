@@ -57,17 +57,21 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          ON_CENTRAL=false
+          if curl -sf "https://repo1.maven.org/maven2/com/gr4vy/gr4vy-kotlin/$VERSION/gr4vy-kotlin-$VERSION.pom" > /dev/null; then
+            ON_CENTRAL=true
+          fi
           TAGGED=$(git rev-parse -q --verify "refs/tags/$VERSION^{commit}" || true)
-          if [ -n "$TAGGED" ] && [ "$TAGGED" != "$SHA" ]; then
-            if curl -sf "https://repo1.maven.org/maven2/com/gr4vy/gr4vy-kotlin/$VERSION/gr4vy-kotlin-$VERSION.pom" > /dev/null; then
-              echo "::notice::$VERSION is already released (tagged on $TAGGED). Nothing to release until VERSION is bumped."
-              echo "release=false" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            echo "::error::$VERSION is tagged on $TAGGED but isn't on Maven Central. Bump VERSION, or finish that release by hand."
+          if [ -n "$TAGGED" ] && [ "$ON_CENTRAL" != true ]; then
+            echo "::error::$VERSION is tagged on $TAGGED but isn't on Maven Central. This workflow publishes before it tags, so that tag didn't come from it. Bump VERSION."
             exit 1
           fi
-          if [ -z "$TAGGED" ] && curl -sf "https://repo1.maven.org/maven2/com/gr4vy/gr4vy-kotlin/$VERSION/gr4vy-kotlin-$VERSION.pom" > /dev/null; then
+          if [ -n "$TAGGED" ] && [ "$TAGGED" != "$SHA" ]; then
+            echo "::notice::$VERSION is already released (tagged on $TAGGED). Nothing to release until VERSION is bumped."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ -z "$TAGGED" ] && [ "$ON_CENTRAL" = true ]; then
             echo "::error::$VERSION is on Maven Central but not tagged. Re-run the failed jobs of the run that published it, so it tags the commit it built."
             exit 1
           fi
