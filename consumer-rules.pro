@@ -198,6 +198,11 @@
 -keepnames class com.netcetera.threeds.sdk.** { *; }
 -dontwarn com.netcetera.threeds.sdk.**
 
+# AndroidX fragments are compile-only. Only the sandbox challenge screen-capture
+# hook references them, and only when the app has them (ADR 0008), so apps
+# without AndroidX fragments must not fail R8 on the missing classes.
+-dontwarn androidx.fragment.app.**
+
 # No keep rule is required for the Netcetera assets/ infrastructure files or
 # the bundled libbdaf.so. Neither R8 code shrinking nor Android resource
 # shrinking removes files under assets/ or jniLibs/, regardless of shrink
