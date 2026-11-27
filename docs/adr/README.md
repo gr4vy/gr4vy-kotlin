@@ -13,5 +13,6 @@ Decisions that are hard to reverse, would surprise a new reader, and came out of
 | 2026-10-08 | [0002](0002-preferred-scheme-query-key.md): The preferred scheme is sent as the `preferredScheme` query key |
 | 2026-11-18 | [0009](0009-releases-start-after-a-version-bump.md): Releases start after a version bump and wait for approval, and only the approved job publishes and tags |
 | 2026-11-18 | [0010](0010-merge-gate-leaves-trust-boundaries-to-a-person.md): The merge gate approves SDK feature code, and a person reviews the trust boundaries |
+| 2026-11-27 | [0011](0011-debug-mode-logs-no-bodies.md): Debug mode logs no request or response bodies or headers |
 
 New ADRs: next free number, `status` and `date` frontmatter, and the format in the existing files. No customer names or internal links: this repo is public.

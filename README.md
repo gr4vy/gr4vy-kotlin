@@ -789,9 +789,7 @@ val gr4vy = Gr4vy(
 
 ### Debug Mode
 
-You can setup your SDK to emit debug logs for SDK requests and responses.
-
-For request and response logging, enable `debugMode` when initializing the SDK:
+You can set up the SDK to log more about each request. To turn it on, enable `debugMode` when initializing the SDK:
 
 ```kotlin
 val gr4vy = Gr4vy(
@@ -803,22 +801,18 @@ val gr4vy = Gr4vy(
 )
 ```
 
-You can also manually control logging:
-
-```kotlin
-// Manually control logging
-Gr4vyLogger.enable()  // Enable logging
-Gr4vyLogger.disable() // Disable logging
-```
+The SDK logs to logcat under the tag `Gr4vySDK`. Each request's method and URL, and the 3DS steps, are logged whether or not debug mode is on. Debug mode adds each response's status and, for an error, a short summary of Gr4vy's error response (code, message, and which field it's about). The SDK doesn't log request or response bodies or headers. One exception: if an error response isn't JSON, its body becomes the error's message, which is logged when a 3DS call fails.
 
 Example output:
 ```
-[Gr4vy SDK] Network request: POST https://api.sandbox.example.gr4vy.app/payment-options
-[Gr4vy SDK] Response: 200 OK
-[Gr4vy SDK] Response time: 245ms
+I Gr4vySDK: [NETWORK] PUT https://api.sandbox.example.gr4vy.app/checkout/sessions/{id}/fields
+I Gr4vySDK: [NETWORK] Response: 204 (no content)
+I Gr4vySDK: [NETWORK] GET https://api.sandbox.example.gr4vy.app/checkout/sessions/{id}/three-d-secure-version?preferredScheme=foo
+I Gr4vySDK: [NETWORK] Response: 400
+D Gr4vySDK: bad_request: Request failed validation (query preferredScheme: Input should be ...)
 ```
 
-**WARNING**: This should only be used for temporary debugging purposes. Leaving this option on in a production system could expose credentials/secrets in logs. Authorization headers are automatically redacted.
+**WARNING**: Use this only for temporary debugging. URLs, including their query values, are logged, so don't leave it on in production.
 <!-- End Debugging [debug] -->
 
 ## Memory Management

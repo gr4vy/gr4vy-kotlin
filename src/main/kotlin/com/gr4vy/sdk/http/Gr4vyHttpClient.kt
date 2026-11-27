@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.modules.SerializersModule
@@ -23,7 +24,6 @@ import java.net.URLEncoder
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
-import okio.Buffer
 import org.json.JSONObject
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -87,31 +87,7 @@ class Gr4vyHttpClient(
         val request = buildRequest(url, method, body, merchantId)
         
         Gr4vyLogger.network("${method.uppercase()} ${request.url}")
-        
-        // Log request headers in debug mode
-        if (configuration.debugMode) {
-            Gr4vyLogger.debug("Request headers:")
-            request.headers.forEach { header ->
-                Gr4vyLogger.debug("  ${header.first}: ${header.second}")
-            }
-            
-            // Log request body for PUT/POST requests
-            if (request.body != null && (method.uppercase() == "POST" || method.uppercase() == "PUT")) {
-                request.body?.let { requestBody ->
-                    try {
-                        val buffer = Buffer()
-                        requestBody.writeTo(buffer)
-                        val bodyContent = buffer.readUtf8()
-                        Gr4vyLogger.debug("Request body: $bodyContent")
-                    } catch (e: Exception) {
-                        Gr4vyLogger.debug("Failed to read request body: ${e.message}")
-                    }
-                }
-            } else if (method.uppercase() == "GET") {
-                Gr4vyLogger.debug("Request body: (converted to URL query parameters)")
-            }
-        }
-        
+
         try {
             val response = client.newCall(request).execute()
             handleResponse(response)
@@ -329,7 +305,9 @@ class Gr4vyHttpClient(
                 Gr4vyLogger.network("Response: ${response.code} (no content)")
             } else {
                 Gr4vyLogger.network("Response: ${response.code}")
-                Gr4vyLogger.debug("Response body: $responseBody")
+            }
+            if (!response.isSuccessful) {
+                errorSummary(responseBody)?.let { Gr4vyLogger.debug(it) }
             }
         }
         
@@ -352,6 +330,29 @@ class Gr4vyHttpClient(
         val code: String?,
         val details: List<Gr4vyErrorDetail>?
     )
+
+    /**
+     * The fields of Gr4vy's error envelope that are safe to log: code, message, and where each
+     * detail points. Never the raw body, which can echo request data.
+     */
+    private fun errorSummary(responseBody: String): String? {
+        val root = try {
+            Json.parseToJsonElement(responseBody) as? JsonObject
+        } catch (e: Exception) {
+            null
+        } ?: return null
+        fun JsonObject.text(key: String) = (this[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
+        val summary = listOfNotNull(root.text("code"), root.text("message")).joinToString(": ")
+        val details = (root["details"] as? JsonArray).orEmpty().filterIsInstance<JsonObject>().joinToString("; ") { detail ->
+            val place = listOfNotNull(detail.text("location"), detail.text("pointer")).joinToString(" ")
+            listOfNotNull(place.ifEmpty { null }, detail.text("message")).joinToString(": ")
+        }
+        return when {
+            details.isNotEmpty() -> "$summary ($details)"
+            summary.isNotEmpty() -> summary
+            else -> null
+        }
+    }
 
     private fun extractErrorInfo(errorBody: String?): ErrorInfo {
         if (errorBody.isNullOrEmpty()) {

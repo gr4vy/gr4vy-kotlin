@@ -140,34 +140,21 @@ class Gr4vyPaymentOptionsServiceTest {
     
     @Test
     fun testDebugOutputExample() {
-        // This test shows what the enhanced debug output will look like
-        println("\n=== Enhanced Debug Output Example ===")
-        println("With the enhanced debug logging, you'll now see:")
+        // This test shows what the debug output looks like
+        println("\n=== Debug Output Example ===")
+        println("With debugMode on, you'll see each request and its status, never bodies or headers:")
         println("")
         println("1. Network request:")
         println("   I  [NETWORK] POST https://api.sandbox.partners.gr4vy.app/payment-options")
         println("")
-        println("2. Request headers:")
-        println("   D  Request headers:")
-        println("   D    Content-Type: application/json") 
-        println("   D    User-Agent: Gr4vy-Kotlin/1.0.0-beta.5 (Android 13)")
-        println("   D    Authorization: Bearer your-jwt-token")
-        println("   D    x-gr4vy-merchant-account-id: your-merchant-id")
-        println("")
-        println("3. Request body:")
-        println("   D  Request body: {\"currency\":\"USD\",\"locale\":\"en-US\",\"metadata\":{}}")
-        println("")
-        println("4. Response:")
+        println("2. Response:")
         println("   I  [NETWORK] Response: 200")
-        println("   D  Response body: {\"payment_options\":[{\"method\":\"card\",\"mode\":\"payment\"}]}")
         println("")
         println("   Or for 204 responses:")
         println("   I  [NETWORK] Response: 204 (no content)")
         println("")
-        println("5. For GET requests (NEW!):")
-        println("   I  [NETWORK] GET https://api.sandbox.partners.gr4vy.app/card-details?currency=USD&bin=42424242")
-        println("   D  Request body: (converted to URL query parameters)")
-        println("")
-        println("This will help you debug exactly what's being sent and received!")
+        println("3. For an error, a summary of Gr4vy's error response:")
+        println("   I  [NETWORK] Response: 400")
+        println("   D  bad_request: Request failed validation (query preferredScheme: Input should be ...)")
     }
 } 
