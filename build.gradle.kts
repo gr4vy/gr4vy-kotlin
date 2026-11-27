@@ -182,8 +182,14 @@ dependencies {
     // Netcetera SDK external dependencies (not embedded - must be provided)
     implementation(libs.slf4j.api)
 
+    // AndroidX fragments: compile only, never shipped to merchants. On an AppCompatActivity the 3DS SDK
+    // shows its challenge as an AndroidX dialog fragment, so the sandbox screen-capture hook watches the
+    // AndroidX fragment manager too, but only when the app already has it (ADR 0008).
+    compileOnly(libs.androidx.fragment)
+
     // Testing
     testImplementation(libs.junit)
+    testImplementation(libs.androidx.fragment)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.robolectric)

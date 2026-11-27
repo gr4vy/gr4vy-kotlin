@@ -27,7 +27,8 @@ Run it for every PR that changes request building, 3DS, tokenization, or the pub
   JAVA_HOME=$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home ./gradlew publishToMavenLocal -PskipSigning=true
   ```
 - **Client app.** Clone `gr4vy/gr4vy-kotlin-client-app`, set `implementation("com.gr4vy:gr4vy-kotlin:<version>")` to the version you just published (the app already reads `mavenLocal()`), and add any new parameter to the Fields screen.
-- **Settings.** `scripts/qa/android-seed.sh` creates a fresh checkout session and launches the app with `qa_*` extras (token, Gr4vy ID, session, card, Authenticate, preferred scheme). DataStore can't be written from `adb`, so the client app needs a small debug hook that reads those extras into its settings. Until that's merged into the client app, apply it locally. `scripts/qa/adrive.py` taps by visible text, scrolls, takes screenshots and prints a filtered SDK log.
+- **Settings.** `scripts/qa/android-seed.sh` creates a fresh checkout session and launches the app with `qa_*` extras (token, Gr4vy ID, session, card, Authenticate, preferred scheme). DataStore can't be written from `adb`, so the client app needs a small debug hook that reads those extras into its settings. Until that's merged into the client app, apply it locally, in both host activities. `scripts/qa/adrive.py` taps by visible text, scrolls, takes screenshots and prints a filtered SDK log.
+- **Host activity.** The 3DS SDK draws its screens differently depending on the activity it runs in: AndroidX dialog fragments in an `AppCompatActivity`, platform dialog fragments in any other activity. The client app has one of each: `MainActivity`, a Compose `ComponentActivity` (the default), and `AppCompatHostActivity`, an `AppCompatActivity` (launcher entry "Gr4vy (AppCompat)"). Pick one with `HOST=component` or `HOST=appcompat` in front of `scripts/qa/android-seed.sh`, and record which you used.
 
 ## Standard matrix
 
@@ -42,6 +43,9 @@ Test cards are the Netcetera ones built into the client app. Expiry `01/30`. Fri
 | 5 | Authentication off | Visa frictionless, GBP, Authenticate off | `PUT …/fields` only, no version call | `tokenized: true`, no `authentication` attempt |
 | 6 | Version call fails | Visa frictionless, GBP, preferred scheme `foo` (the card is stored, then Core API rejects the version call) | `PUT …/fields` succeeds, version 400, no authenticate call | `attempted: false`, `tokenized: true`, no crash |
 | 7 | Challenge, timed out | Visa challenge, GBP, leave the challenge open past the challenge timeout (at least five minutes) | as 3 | `attempted: true`, `timed_out: true`, no `transaction_status` |
+| 8 | Challenge, completed, AppCompat host | as 3, with `HOST=appcompat` | as 3 | as 3 |
+
+Rows 1 to 7 run in the default host. Row 8 covers the 3DS SDK's other way of drawing the challenge. A change to how the challenge is shown or protected runs rows 3, 4 and 7 in both hosts.
 
 Add feature rows on top of this. For a new request parameter, that means absent, empty, valid, invalid and the documented example, as in principle 5.
 
